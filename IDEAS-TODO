@@ -116,3 +116,22 @@ Instance JSON format:
 "customversions": ["1.5.2_Optifine", "13w22a_NoHorses"] # Custom versions available to run
 }
 
+Software Design Plan:
+-First launch
+	-User sees menubar at top
+		-Manage Minecraft versions
+			-Custom and vanilla ones
+			-Download vanilla minecrafts
+			-Manage custom libraries
+		-Help menu
+			-License!
+	-User sees list of instances from a welcome tab and choose one
+		-New tab opens for that instance
+			-Select a Minecraft to launch (custom or vanilla)
+			-Optionally log-in below the list of Minecrafts
+			-Launch button!
+			-Do not allow multiple Minecrafts to launch on one instance
+			-Show console?
+			-After closing
+				-Let players select a different Minecraf to launch
+				-
