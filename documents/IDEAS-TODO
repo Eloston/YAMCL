@@ -23,7 +23,7 @@
 -At startup, launcher will check directory structure and check to see if important json files are present (index.json, and others)
 -Lancher will NOT check the indexes to see if they're up-to-date. Instead that will be a separate feature.
 
--Each instance will contain the data that Minecraft creates and Minecraft versions that are associated to the instance that are able to be chosen to launch with.
+-Each profile will contain the data that Minecraft creates and Minecraft versions that are associated to the profile that are able to be chosen to launch with.
     -Unknown how to divide up resources (sounds, etc) to save disk space
 
 -Natives will be linked to their associated library. When a library is loaded, the natives are loaded as well.
@@ -54,9 +54,9 @@ auth_player_name # Case correct name in-game
 auth_uuid # Needed for Premium accounts?
 auth_session # Needed for Premium accounts?
 auth_access_token # Needed for Premium accounts?
-profile_name # Pass in name of the instance here
+profile_name # Pass in name of the profile here
 version_name # Version of the Minecraft being launched. Pass in "basename" parameter from JSON file
-game_directory # Pass in absolute path to instance data directory
+game_directory # Pass in absolute path to profile data directory
 game_assets # The same thing as game_directory with the assets directory specified
 
 ---Directory Structure:
@@ -82,8 +82,8 @@ YAMCL_data/
                 # Same as vanilla Minecrafts
         index.json # List of modded and vanilla Minecrafts
         versions.json # List of Minecraft versions on the Mojang servers
-    instances/
-        (INSTANCE_NAME_HERE)/
+    profile/
+        (PROFILE_NAME_HERE)/
             data/
                 # Minecraft data goes here, like texturepacks, resources, saves, etc
             info.json
@@ -109,14 +109,18 @@ Binary JSON format:
 # Keep repeating
 ]
 
-Instance JSON format:
+Profile JSON format:
 {
-"notes": "", # Notes about the instance
+"notes": "", # Notes about the profile
 "vanillaversions": ["1.5.2", "13w22a", "1.5.1"], # Vanilla versions available to run
 "customversions": ["1.5.2_Optifine", "13w22a_NoHorses"] # Custom versions available to run
 }
 
+=====================
 Software Design Plan:
+=====================
+
+User Perspective
 -First launch
 	-User sees menubar at top
 		-Manage Minecraft versions
@@ -125,13 +129,34 @@ Software Design Plan:
 			-Manage custom libraries
 		-Help menu
 			-License!
-	-User sees list of instances from a welcome tab and choose one
-		-New tab opens for that instance
+            -Github link
+            -Email?
+	-User sees welcome tab
+        -Welcome tab never closes
+        -Boxed area for logging in or offline mode
+            -Username, password, and login button
+                -Once logged in, have an option for log out
+		-Another boxed area with a list of minecraft profiles. User selects a profile from the list
 			-Select a Minecraft to launch (custom or vanilla)
 			-Optionally log-in below the list of Minecrafts
 			-Launch button!
-			-Do not allow multiple Minecrafts to launch on one instance
-			-Show console?
+			-Do not allow multiple Minecrafts to launch in any one profile
+			-Show standard output?
 			-After closing
-				-Let players select a different Minecraf to launch
-				-
+				-Let players select a different Minecraft to launch
+
+Technical Details
+-Downloading a vanilla version of Minecraft:
+    -Create new vanilla directory with files:
+        -Download the version's .json file
+        -Download the version's .jar file
+    -Create new entry in bin/index.json
+    -Download libraries for all platforms as defined by the version's .json
+        -Add entries in lib/index.json
+    -Download resources? (or does that happen when Minecraft opens...)
+
+-Logging in
+    -Magic happens
+        -See MinecraftCoalition
+
+
