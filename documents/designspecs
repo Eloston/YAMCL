@@ -1,0 +1,76 @@
+YAMCL is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+YAMCL is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with YAMCL.  If not, see {http://www.gnu.org/licenses/}.
+
+***END OF LICENSE NOTICE***
+
+====================
+Software Design Plan
+====================
+
+***User GUI Perspective
+-First launch
+	-User sees menubar at top
+		-Manage Minecraft versions
+			-Custom and vanilla ones
+			-Download vanilla minecrafts
+			-Manage custom libraries
+		-Help menu
+			-License!
+            -Github link
+            -Email?
+	-User sees welcome tab
+        -Welcome tab never closes
+        -Boxed area for logging in or offline mode
+            -Username, password, and login button
+                -Once logged in, have an option for log out
+		-Another boxed area with a list of minecraft profiles.
+            -User double-clicks a profile from the list
+			    -Select a Minecraft to launch (custom or vanilla)
+			    -Optionally log-in below the list of Minecrafts
+			    -Launch button!
+			    -Do not allow multiple Minecrafts to launch in any one profile
+			    -Show standard output?
+			    -After closing
+				    -Let players select a different Minecraft to launch
+            -User selects a profile and...
+                -Specifies delete. The user will confirm deletion.
+                -Specifies rename. The user will see a new dialog box with a textbox with the current profile name
+                -Speicifes "View Profile Data". The user will see their default or configured file manager open to the "data" directory.
+
+***Somewhat Technical Details
+-Downloading a vanilla version of Minecraft:
+    -Create new vanilla directory with files:
+        -Download the version's .json file
+        -Download the version's .jar file
+    -Create new entry in bin/index.json
+    -Download libraries for all platforms as defined by the version's .json
+        -Add entries in lib/index.json
+    -Download resources? (or does that happen when Minecraft opens...)
+
+-Logging in
+    -Magic happens
+        -See MinecraftCoalition
+
+***Class/Module structure
+End-user interface (Class for GUI, CUI, interface to some 3rd party software, etc)
+YAMCL (Class that exposes methods for the interface to use. Performs overall launcher management. There can be multiple instances)
+    fstools (Class that stores the path to YAMCL_data and manipulates files, including JSON. There will be one instance)
+    networktools (Class that provides file retrieval from the Mojang servers and saving. There will be one instance)
+    configtools (Class that provides the reading and writing of the main YAMCL configuration. There will be one instance)
+    
+    binutil
+    libutil
+    profileutil
+
+    premiumauth (Manages the log-in session with Mojang. There will be one instance)
+    profileinstance (Class that provides methods to launch minecraft, modify profile metadata, and keep track of the minecraft running)
