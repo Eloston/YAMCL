@@ -93,3 +93,60 @@ profile_name # Pass in name of the profile here
 version_name # Version of the Minecraft being launched. Pass in "basename" parameter from JSON file
 game_directory # Pass in absolute path to profile data directory
 game_assets # The same thing as game_directory with the assets directory specified
+
+
+*Version 13 Info*
+
+net/minecraft/launcher/GameLauncher.java contains most launcher functionality
+
+Libraries (net/minecraft/launcher/versions/Library.java):
+Examples:
+org.apache.commons:commons-lang3:3.1
+    https://libraries.minecraft.net/org/apache/commons/commons-lang3/3.1/commons-lang3-3.1.jar
+commons-io:commons-io:2.4
+    https://libraries.minecraft.net/commons-io/commons-io/2.4/commons-io-2.4.jar
+
+tv.twitch:twitch-platform:5.16 OSX natives
+    https://libraries.minecraft.net/tv/twitch/twitch-platform/5.16/twitch-platform-5.16-natives-osx.jar
+
+tv.twitch:twitch-platform:5.16 Windows 64-bit Natives
+    https://libraries.minecraft.net/tv/twitch/twitch-platform/5.16/twitch-platform-5.16-natives-windows-64.jar
+
+tv.twitch:twitch-platform:5.16 Windows 32-bit Natives
+    https://libraries.minecraft.net/tv/twitch/twitch-platform/5.16/twitch-platform-5.16-natives-windows-32.jar
+
+Operating System (net/minecraft/launcher/OperatingSystem.java):
+"linux" if system name has "linux" or "unix"
+"windows" if system name has "win"
+"osx" if system name has "mac"
+"unknown" if blank
+
+Use "os.name" property and make all lowercase
+Check if this string from "os.name" property contains one of the values listed above
+
+$(arch) seems to be "32" or "64"
+
+If natives are defined for that library, then it is natives only!
+
+Launcher Constants (net/minecraft/launcher/LauncherConstants.java):
+version name: 1.3.9
+numerical version: 13
+binary download url: https://s3.amazonaws.com/Minecraft.Download/
+resource download url: http://resources.download.minecraft.net/
+library dounlowad url: https://libraries.minecraft.net/
+status checker?: http://status.mojang.com/check
+
+Version manager (net/minecraft/launcher/updater/VersionManager.java):
+Index URL???: https://s3.amazonaws.com/Minecraft.Download/indexes/
+Index URL for 1.7.4: https://s3.amazonaws.com/Minecraft.Download/indexes/1.7.4.json
+Index seems to be for sounds and language information
+
+If version is too old switch to "legacy"?
+    https://s3.amazonaws.com/Minecraft.Download/indexes/legacy.json
+
+Example:
+sounds/dig/cloth4.ogg (hash 55da1856e77cfd31a7e8c3d358e1f856c5583198)
+    http://resources.download.minecraft.net/55/55da1856e77cfd31a7e8c3d358e1f856c5583198
+
+Take first two digits of hash, and it becomes directory
+    Then the hash becomes the file name

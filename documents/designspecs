@@ -61,16 +61,28 @@ Software Design Plan
     -Magic happens
         -See MinecraftCoalition
 
+***Command line info for interfaces
+(using argparse)
+--platform-override
+    # Override platform detection. Specify "linux", "windows", "osx", or "unknown"
+
+--data-path
+    # Override path to directory containing YAMCL's data
+
+--java-command
+    # Specify the command to invoke Java
+
 ***Class/Module structure
 End-user interface (Class for GUI, CUI, interface to some 3rd party software, etc)
-YAMCL (Class that exposes methods for the interface to use. Performs overall launcher management. There can be multiple instances)
-    fstools (Class that stores the path to YAMCL_data and manipulates files, including JSON. There will be one instance)
-    networktools (Class that provides file retrieval from the Mojang servers and saving. There will be one instance)
-    configtools (Class that provides the reading and writing of the main YAMCL configuration. There will be one instance)
+Launcher (Class that exposes methods for the interface to use. Performs overall launcher management. There can be multiple instances)
+    # Services for everything else
+    FileTools (Class that stores the path to YAMCL_data and manipulates files, including JSON. There will be one instance)
+    NetworkTools (Class that provides file retrieval from the Mojang servers and saving. There will be one instance)
     
-    binutil
-    libutil
-    profileutil
-
-    premiumauth (Manages the log-in session with Mojang. There will be one instance)
-    profileinstance (Class that provides methods to launch minecraft, modify profile metadata, and keep track of the minecraft running)
+    # Main services
+    BinaryManager (Class that manages Minecraft versions. Will also get info from versions.json There will be only one instance)
+    LibraryManager (Class that manages Minecraft library files and natives. There will be only one instance)
+    ProfileManager (Class that manages the profiles. Also contains all profile objects. There will be only one instance)
+    ProfileInstance (Class that provides methods to launch minecraft, modify profile metadata, and keep track of the minecraft running)
+    AssetManager (Class that manages the assets
+    AccountManager (Manages the log-in session with Mojang. There will be one instance)

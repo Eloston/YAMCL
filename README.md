@@ -3,7 +3,9 @@ YAMCL
 
 Yet Another MineCraft Launcher
 
-YAMCL is a cross-platform Minecraft Launcher written in Python 3
+YAMCL is a cross-platform Minecraft launcher written in Python 3
+
+It strives for optimal simplicity and flexibility
 
 YAMCL is currently under heavy development
 

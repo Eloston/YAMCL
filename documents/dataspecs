@@ -30,20 +30,26 @@ YAMCL_data/
                 # Library jar files will go in here
         index.json # Contains list of libraries
     bin/
+        assets/ # Includes sounds, language packs, etc. Actual data in the hash format like the vanilla launcher. Also contains custom assets too
+            custom/ # Contains custom assets. Has to be referenced by the asset index.
+            # Assets like in vanilla launcher will go here
         vanilla/
             # Minecrafts from Mojang will go here (releases and snapshots)
             (VERSION_NAME_HERE)/
                 (VERSION_NAME_HERE).json # Contains info about the Minecraft version (libraries used, class to run, etc)
                 (VERSION_NAME_HERE).jar # The actual Minecraft binary
+                (VERSION_NAME_HERE)_index.json # Asset index
         custom/
             # Custom versions go here (modded versions)
             (CUSTOM_NAME_HERE)/
                 (CUSTOM_NAME_HERE).json # Contains info about the Minecraft version (same format as the one from Mojang)
                 (CUSTOM_NAME_HERE).jar # Actual Minecraft binary
+                (VERSION_NAME_HERE)_index.json # Asset index
                 metadata.json # Contains extra information for this custom version
         index.json # List of modded and vanilla Minecrafts
         versions.json # List of Minecraft versions on the Mojang servers
     profile/
+        index.json # Profile Index Metadata
         (PROFILE_NAME_HERE)/
             data/
                 # Minecraft data goes here, like texturepacks, resources, saves, etc
