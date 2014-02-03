@@ -19,3 +19,9 @@ import yamcl.main
 
 test_launcher = yamcl.main.Launcher()
 test_launcher.startup()
+print(test_launcher.FileTools.check_data_integrity())
+print("OS Family: " + test_launcher.get_os_family() + "\nOS Arch: " + test_launcher.get_os_arch())
+#test_launcher.BinaryManager.download_versions()
+#print(test_launcher.BinaryManager.get_versions())
+#test_launcher.BinaryManager.download_version_id("1.7.4")
+test_launcher.BinaryManager.download_version_id("1.6")

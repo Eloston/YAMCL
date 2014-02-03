@@ -14,6 +14,8 @@ along with YAMCL.  If not, see {http://www.gnu.org/licenses/}.
 '''
 
 import sys
+import shutil
+import platform
 
 import yamcl.tools
 import yamcl.services
@@ -30,6 +32,7 @@ class Launcher:
         -Will setup YAMCL_data if necessary
         -Get OS family and architecture
         '''
+        # Instantiate components
         self.FileTools = yamcl.tools.FileTools(data_path)
         self.NetworkTools = yamcl.tools.NetworkTools(use_https)
 
@@ -38,6 +41,18 @@ class Launcher:
         self.ProfileManager = yamcl.services.ProfileManager(self)
         self.AssetManager = yamcl.services.AssetManager(self)
         self.AccountManager = yamcl.services.AccountManager(self)
+
+        # Setting OS information
+        self.os_info = dict()
+        if (sys.platform == "win32" or sys.platform == "cygwin"):
+            current_platform = "windows"
+        elif (sys.platform == "darwin"):
+            current_platform = "osx"
+        else:
+            # Assuming it is linux, otherwise the user wouldn't be playing Minecraft to begin with
+            current_platform = "linux"
+        self.os_info["family"] = current_platform
+        self.os_info["arch"] = platform.architecture(shutil.which(java_command))[0][:2]
 
     def shutdown(self):
         '''
@@ -49,15 +64,11 @@ class Launcher:
         '''
         Returns the current OS family name. Either "windows", "osx", or "linux". Will return "linux" if it is not osx or windows
         '''
-        if (sys.platform == "win32" or sys.platform == "cygwin"):
-            return "windows"
-        else if (sys.platform == "darwin"):
-            return "osx"
-        else:
-            return "linux"
+        return self.os_info["family"]
 
     def get_os_arch(self):
         '''
         Returns the architecture the OS is built for. "32" for 32-bit and "64" for 64-bit
+        Uses the Java binary for determining the architecture
         '''
-        pass
+        return self.os_info["arch"]
