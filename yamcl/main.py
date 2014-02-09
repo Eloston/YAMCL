@@ -21,10 +21,13 @@ import yamcl.tools
 import yamcl.services
 
 class Launcher:
-    def __init__(self):
+    def __init__(self, data_path=""):
         self.COMPATIBLE_VERSION = 13
+        self.PLATFORM_LIST = ["linux", "windows", "osx"]
+        # Necessary for checking 
+        self.FileTools = yamcl.tools.FileTools(data_path)
 
-    def startup(self, data_path="", platform_override="", java_command="", use_https=True):
+    def startup(self, platform_override="", java_command=""):
         '''
         -Initializes all the classes.
         -Reads main configuration file.
@@ -33,26 +36,31 @@ class Launcher:
         -Get OS family and architecture
         '''
         # Instantiate components
-        self.FileTools = yamcl.tools.FileTools(data_path)
-        self.NetworkTools = yamcl.tools.NetworkTools(use_https)
 
-        self.BinaryManager = yamcl.services.BinaryManager(self)
-        self.LibraryManager = yamcl.services.LibraryManager(self)
-        self.ProfileManager = yamcl.services.ProfileManager(self)
-        self.AssetManager = yamcl.services.AssetManager(self)
-        self.AccountManager = yamcl.services.AccountManager(self)
+        if (self.FileTools.check_data_integrity()):
+            self.NetworkTools = yamcl.tools.NetworkTools()
+            
+            self.BinaryManager = yamcl.services.BinaryManager(self)
+            self.LibraryManager = yamcl.services.LibraryManager(self)
+            self.ProfileManager = yamcl.services.ProfileManager(self, java_command)
+            self.AssetManager = yamcl.services.AssetManager(self)
+            self.AccountManager = yamcl.services.AccountManager(self)
 
-        # Setting OS information
-        self.os_info = dict()
-        if (sys.platform == "win32" or sys.platform == "cygwin"):
-            current_platform = "windows"
-        elif (sys.platform == "darwin"):
-            current_platform = "osx"
+            # Setting OS information
+            self.os_info = dict()
+            if (sys.platform == "win32" or sys.platform == "cygwin"):
+                current_platform = "windows"
+            elif (sys.platform == "darwin"):
+                current_platform = "osx"
+            else:
+                # Assuming it is linux, otherwise the user wouldn't be playing Minecraft to begin with
+                current_platform = "linux"
+            self.os_info["family"] = current_platform
+            self.os_info["arch"] = platform.architecture(shutil.which(self.ProfileManager.java_command))[0][:2]
+
+            return "SUCCESS"
         else:
-            # Assuming it is linux, otherwise the user wouldn't be playing Minecraft to begin with
-            current_platform = "linux"
-        self.os_info["family"] = current_platform
-        self.os_info["arch"] = platform.architecture(shutil.which(java_command))[0][:2]
+            return "FAIL_DATACORRUPT"
 
     def shutdown(self):
         '''

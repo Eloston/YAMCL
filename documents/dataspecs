@@ -23,11 +23,13 @@ YAMCL_data/
     lib/
         # Libraries go here. Mojang form: com.blah.blah, org.blah.blah, net.blah.blah, etc
         # Custom libraries can go here too
-        (LIBRARY_NAME_HERE)/
-            natives/
-                # Natives go in here
-            jar/
-                # Library jar files will go in here
+        (LIBRARY_PATH_HERE)/
+            natives-$(platform)/
+                # Natives go in here, for platform $(platform)
+            natives-$(platform)-$(arch)/
+                # Natives go in here, for os family $(platform) and architecture $(arch)
+            # natives directory for each platform and architecture combination
+            # Library jar files will go in here, if this is not natives
         index.json # Contains list of libraries
     bin/
         assets/ # Includes sounds, language packs, etc. Actual data in the hash format like the vanilla launcher. Also contains custom assets too
@@ -38,7 +40,7 @@ YAMCL_data/
             (VERSION_NAME_HERE)/
                 (VERSION_NAME_HERE).json # Contains info about the Minecraft version (libraries used, class to run, etc)
                 (VERSION_NAME_HERE).jar # The actual Minecraft binary
-                (VERSION_NAME_HERE)_index.json # Asset index
+                (VERSION_NAME_HERE)_assets.json # Asset index
         custom/
             # Custom versions go here (modded versions)
             (CUSTOM_NAME_HERE)/
@@ -61,7 +63,8 @@ Library Index JSON format:
 [
 {
 "name": "domain.blah.blah:blah_1.23", # Will be the name reported by Minecraft json files
-"path": "domain.blah.blah-blah_1.23" # Path to library file and natives (the lib and natives directories)
+"path": ["domain", "blah", "blah-blah_1.23"], # Path to library directory IF LIBRARY IS NATIVES. Path to jar file IF LIBRARY IS REGULAR. Path elements are in a list.
+"natives": ["windows-${arch}", "linux", "osx"] # ONLY present if library is just natives. Contains a list of directory names for natives for platform/architecture combinations. $(arch) is the platform architecture, that will be replaced to get the actual directory name.
 },
 # Keep repeating
 ]
@@ -77,7 +80,6 @@ Binary Index JSON format:
 {
 "type": "vanilla" or "custom", # Type of binary
 "name": "1.7.2", # Version name as reported by Mojang for vanilla, and user specified name for custom
-"directory": "1_7_2" # Will be a directory-name friendly version of the "name" parameter
 },
 # Keep repeating
 ]
@@ -93,7 +95,7 @@ Profile Index JSON format:
 [
 {
 "name": "My Profile", # User specified friendly name
-"directory": "My_Profile" # Directory-friendly version of the "name" field
+"directory": ["My_Profile"] # Directory-friendly version of the "name" field. Path elements are in a list.
 },
 # Keep repeating
 ]

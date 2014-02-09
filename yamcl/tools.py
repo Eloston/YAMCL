@@ -113,20 +113,20 @@ class FileTools:
         shutil.copy(source_path, destination_path)
 
 class NetworkTools:
-    def __init__(self, use_https):
-        if (use_https):
-            protocol = "https://"
-        else:
-            protocol = "http://"
+    def __init__(self):
+        protocol = "https://"
 
         # Base URLs
         self.DOWNLOAD_URL = protocol + "s3.amazonaws.com/Minecraft.Download/"
         self.RESOURCES_URL = protocol + "resources.download.minecraft.net/"
-        self.LIBRARIES_URL = protocol + "libraries.minecraft.net/"        
+        self.LIBRARIES_URL = protocol + "libraries.minecraft.net/" # Requires HTTPS protocol
 
         # Specific URLs
         self.VERSIONS_JSON_URL = self.DOWNLOAD_URL + "versions/versions.json"
         self.INDEXES_URL = self.DOWNLOAD_URL + "indexes/"
 
     def get_url_object(self, url):
+        '''
+        Returns a URL object that supports the file IO interface
+        '''
         return urllib.request.urlopen(url)
