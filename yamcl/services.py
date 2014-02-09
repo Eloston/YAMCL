@@ -228,6 +228,63 @@ class AssetManager:
     def __init__(self, launcher_obj):
         self.Launcher = launcher_obj
 
+    def get_binary_assets_id(self, version_id):
+        '''
+        Get the assets ID from a binary version 'version_id'
+        '''
+        current_asset_id = "legacy"
+        version_info = version_libraries = self.Launcher.FileTools.read_json(self.Launcher.BinaryManager.get_version_file_paths(version_id, "vanilla")[1])
+        if ("assets" in version_info):
+            current_assets_id = version_info["assets"]
+        return current_assets_id
+
+    def download_asset_index(self, asset_id):
+        '''
+        Downloads the JSON asset index specified by 'asset_id'
+        '''
+        asset_url_object = self.Launcher.NetworkTools.get_url_object(self.Launcher.NetworkTools.INDEXES_URL + asset_id + ".json")
+        asset_index_path = self.Launcher.FileTools.get_full_path(["bin", "assets", "indexes", asset_id + ".json"])
+        self.Launcher.FileTools.write_object(asset_index_path, asset_url_object)
+
+    def download_missing_assets(self, asset_id, progress_function=None):
+        '''
+        Downloads assets specified in 'asset_id' but are not already downloaded
+        '''
+        asset_info = self.Launcher.FileTools.read_json(self.Launcher.FileTools.get_full_path(["bin", "assets", "indexes", asset_id + ".json"]))
+        asset_list = asset_info["objects"]
+
+        is_virtual = False
+        if ("virtual" in asset_info):
+            if (asset_info["virtual"] == True):
+                is_virtual = True
+
+        if not (progress_function == None):
+            progress_function("Finding missing assets", 0)
+        asset_dict = dict()
+        if (is_virtual):
+            assets_base_path = ["bin", "assets", "virtual", asset_id]
+            if not self.Launcher.FileTools.path_exists(self.Launcher.FileTools.get_full_path(assets_base_path)):
+                for asset_name in asset_list.keys():
+                    asset_path_list = [asset_list[asset_name]["hash"][:2], asset_list[asset_name]["hash"]]
+                    asset_dict[self.Launcher.NetworkTools.RESOURCES_URL + "/".join(asset_path_list)] = self.Launcher.FileTools.get_full_path(assets_base_path + asset_name.split("/"))
+        else:
+            for asset in asset_list.values():
+                asset_path_list = [asset["hash"][:2], asset["hash"]]
+                asset_absolute_path = self.Launcher.FileTools.get_full_path(["bin", "assets", "vanilla"] + asset_path_list)
+                if not self.Launcher.FileTools.path_exists(asset_absolute_path):
+                    asset_dict[self.Launcher.NetworkTools.RESOURCES_URL + "/".join(asset_path_list)] = asset_absolute_path
+
+        asset_count = 0
+        asset_total_count = len(asset_dict)
+        for asset_url in asset_dict.keys():
+            asset_url_object = self.Launcher.NetworkTools.get_url_object(asset_url)
+            self.Launcher.FileTools.write_object(asset_dict[asset_url], asset_url_object)
+            asset_count += 1
+            if not (progress_function == None):
+                progress_function("Downloading assets", asset_count/asset_total_count)
+
 class AccountManager:
     def __init__(self, launcher_obj):
         self.Launcher = launcher_obj
+        self.GAME_USERNAME = "YAMCL"
+        self.IS_OFFLINE = True

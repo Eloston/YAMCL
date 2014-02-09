@@ -112,6 +112,12 @@ class FileTools:
         '''
         shutil.copy(source_path, destination_path)
 
+    def path_exists(self, path):
+        '''
+        Checks to see if path exists (whether a directory or file)
+        '''
+        return os.path.exists(path)
+
 class NetworkTools:
     def __init__(self):
         protocol = "https://"

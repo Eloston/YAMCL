@@ -34,3 +34,8 @@ print(test_launcher.LibraryManager.official_id_to_path("org.lwjgl.lwjgl:lwjgl-pl
 print('/'.join(test_launcher.LibraryManager.official_id_to_path("org.lwjgl.lwjgl:lwjgl-platform:2.9.1-nightly-20130708-debug3", natives_extension="natives-linux")))
 print(test_launcher.BinaryManager.get_version_file_paths("1.7.4", "vanilla"))
 #test_launcher.LibraryManager.download_missing_official_libraries("1.7.4", status_function)
+#test_launcher.AssetManager.download_asset_index("1.7.4")
+#test_launcher.AssetManager.download_missing_assets("1.7.4", status_function)
+print(test_launcher.AssetManager.get_binary_assets_id("1.7.4"))
+test_launcher.AssetManager.download_asset_index("legacy")
+test_launcher.AssetManager.download_missing_assets("legacy", status_function)
