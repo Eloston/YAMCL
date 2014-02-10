@@ -18,6 +18,7 @@ import urllib.request
 import os.path
 import os
 import shutil
+import zipfile
 
 class FileTools:
     def __init__(self, current_path):
@@ -98,6 +99,28 @@ class FileTools:
         with open(json_path, mode="wb") as tmp_file_obj:
             tmp_file_obj.write(json.JSONEncoder(indent=2).encode(json_obj).encode(self.TEXT_ENCODING))
 
+    # jar file methods
+
+    def get_jar_object(self, jar_path):
+        '''
+        Creates a jar object from jar file on path 'jar_path'
+        '''
+        return zipfile.ZipFile(jar_path)
+
+    def extract_jar_files(self, jar_object, destination_dir, exclude_list=list()):
+        '''
+        Extracts files from jar_object 'jar_object' to directory 'destination_dir', excluding files in 'exclude_list'
+        '''
+        jar_file_list = jar_object.namelist()
+        if (len(exclude_list) > 0):
+            good_list = list()
+            for exclude in exclude_list:
+                for member in jar_file_list:
+                    if not member.startswith(exclude):
+                        good_list.append(member)
+            jar_file_list = good_list
+        jar_object.extractall(destination_dir, jar_file_list)
+
     # Other methods
 
     def add_missing_dirs(self, file_path):
@@ -117,6 +140,21 @@ class FileTools:
         Checks to see if path exists (whether a directory or file)
         '''
         return os.path.exists(path)
+
+    def delete_file(self, path):
+        '''
+        Deletes a file
+        '''
+        os.remove(path)
+
+    def delete_and_clean(self, path):
+        '''
+        Deletes path 'path' (will recursively delete directory)
+        Directories that have become empty will be removed starting from the file's directory.
+        '''
+        # TODO: use os.removedirs(path) to delete empty directories
+        # TODO: use shutil.rmtree() to delete jar or natives, but not clear empty directories
+        pass
 
 class NetworkTools:
     def __init__(self):

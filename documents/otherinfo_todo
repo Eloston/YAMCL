@@ -84,16 +84,21 @@ The List of Disorganized Information
     -Modify arguments
 
 -Need to implement passable arguments:
-auth_username # Is the same as player name, otherwise it is the email
-auth_player_name # Case correct name in-game
-auth_uuid # Needed for Premium accounts?
-auth_session # Needed for Premium accounts?
-auth_access_token # Needed for Premium accounts?
 profile_name # Pass in name of the profile here
-version_name # Version of the Minecraft being launched. Pass in "basename" parameter from JSON file
+version_name # Version ID of the Minecraft being launched
 game_directory # Pass in absolute path to profile data directory
-game_assets # The same thing as game_directory with the assets directory specified
+game_assets # Folder containing hashed assets, or inside a virtual assets dir
+assets_root # directory containing objects, indexes, and virtual directories.
+assets_index_name # name of the assets used.
 
+Authentication related:
+auth_username # Is the same as player name, otherwise it is the email
+auth_player_name # Case correct name in-game. Official launcher uses "Player"
+auth_uuid # Retrieved from log-in, otherwise create blank uuid.
+auth_session # Needed for Premium accounts. Use "-" (dash) for offline.
+auth_access_token # Needed for Premium accounts. Use "0" (zero) for offline (for now)
+user_type # Either "mojang" or "legacy". Probably refers to "legacy" if not migrated to a Mojang account, and "mojang" if migrated. Use "legacy" in offline mode
+user_properties # Used in Premium accounts. Use empty dictionary "{}" for offline.
 
 *Version 13 Info*
 

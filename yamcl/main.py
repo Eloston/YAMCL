@@ -56,7 +56,7 @@ class Launcher:
                 # Assuming it is linux, otherwise the user wouldn't be playing Minecraft to begin with
                 current_platform = "linux"
             self.os_info["family"] = current_platform
-            self.os_info["arch"] = platform.architecture(shutil.which(self.ProfileManager.java_command))[0][:2]
+            self.os_info["arch"] = platform.architecture(shutil.which(self.ProfileManager.java_path))[0][:2]
 
             return "SUCCESS"
         else:
