@@ -18,65 +18,62 @@ import shutil
 import platform
 
 import yamcl.tools
-import yamcl.services
+import yamcl.binaries
+import yamcl.libraries
+import yamcl.managers
+import yamcl.profiles
+from yamcl.globals import DataPath
 
 class Launcher:
-    def __init__(self, data_path=""):
-        self.COMPATIBLE_VERSION = 13
+    def __init__(self, data_path=str()):
+        self.COMPATIBLE_VERSION = 14
         self.PLATFORM_LIST = ["linux", "windows", "osx"]
-        # Necessary for checking 
-        self.FileTools = yamcl.tools.FileTools(data_path)
 
-    def startup(self, platform_override="", java_command=""):
+        self.FileTools = yamcl.tools.FileTools()
+
+    def startup(self, data_path=str(), platform_override=str(), java_command=str(), download_specific_libraries=True):
         '''
         -Initializes all the classes.
-        -Reads main configuration file.
         -"data_path" has path to YAMCL_data. If blank, set path to the current directory of this program.
         -Will setup YAMCL_data if necessary
-        -Get OS family and architecture
         '''
-        # Instantiate components
+        DataPath.set_data_path(data_path)
+        if (self.check_data_integrity()):
+            self.PlatformTools = yamcl.tools.PlatformTools(java_command)
 
-        if (self.FileTools.check_data_integrity()):
-            self.NetworkTools = yamcl.tools.NetworkTools()
-            
-            self.BinaryManager = yamcl.services.BinaryManager(self)
-            self.LibraryManager = yamcl.services.LibraryManager(self)
-            self.ProfileManager = yamcl.services.ProfileManager(self, java_command)
-            self.AssetManager = yamcl.services.AssetManager(self)
-            self.AccountManager = yamcl.services.AccountManager(self)
-
-            # Setting OS information
-            self.os_info = dict()
-            if (sys.platform == "win32" or sys.platform == "cygwin"):
-                current_platform = "windows"
-            elif (sys.platform == "darwin"):
-                current_platform = "osx"
-            else:
-                # Assuming it is linux, otherwise the user wouldn't be playing Minecraft to begin with
-                current_platform = "linux"
-            self.os_info["family"] = current_platform
-            self.os_info["arch"] = platform.architecture(shutil.which(self.ProfileManager.java_path))[0][:2]
+            self.BinaryManager = yamcl.binaries.BinaryManager(self)
+            self.LibraryManager = yamcl.libraries.LibraryManager(self, download_specific_libraries)
+            self.ProfileManager = yamcl.profiles.ProfileManager(self)
+            self.AssetsManager = yamcl.managers.AssetsManager(self)
+            self.AccountManager = yamcl.managers.AccountManager()
 
             return "SUCCESS"
         else:
             return "FAIL_DATACORRUPT"
+
+    def create_skeleton_structure(self):
+        '''
+        Creates the skeleton structure for YAMCL data
+        '''
+        self.FileTools.write_json(str(DataPath("lib/index.json")), dict())
+        self.FileTools.write_json(str(DataPath("bin/index.json")), list())
+        self.FileTools.write_json(str(DataPath("profile/index.json")), dict())
+
+    def check_data_integrity(self):
+        '''
+        Returns True if the current YAMCL data structural integrity is holding, False otherwise
+        '''
+        try:
+            if (DataPath(str()).is_directory()):
+                if (DataPath("lib").is_directory() and DataPath("bin").is_directory() and DataPath("profile").is_directory()):
+                    if (not DataPath("lib/index.json").is_directory() and not DataPath("bin/index.json").is_directory() and not DataPath("profile/index.json").is_directory()):
+                        return True
+        except FileNotFoundError:
+            pass
+        return False
 
     def shutdown(self):
         '''
         Launcher cleans itself up and exits
         '''
         pass
-
-    def get_os_family(self):
-        '''
-        Returns the current OS family name. Either "windows", "osx", or "linux". Will return "linux" if it is not osx or windows
-        '''
-        return self.os_info["family"]
-
-    def get_os_arch(self):
-        '''
-        Returns the architecture the OS is built for. "32" for 32-bit and "64" for 64-bit
-        Uses the Java binary for determining the architecture
-        '''
-        return self.os_info["arch"]

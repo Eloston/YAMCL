@@ -86,3 +86,27 @@ Launcher (Class that exposes methods for the interface to use. Performs overall 
     ProfileInstance (Class that provides methods to launch minecraft, modify profile metadata, and keep track of the minecraft running)
     AssetManager (Class that manages the assets
     AccountManager (Manages the log-in session with Mojang. There will be one instance)
+
+# YAMCL Re-Design
+# Indentation represents encapsulation, not inheritence
+End-user interface
+
+# Used globally
+FilePath
+URL
+
+Launcher
+    # Services for everything else
+    FileTools
+    PlatformTools (gets Java path and OS information)
+
+    # Main services
+    BinaryManager
+        BinaryParser
+    LibraryManager
+        LibraryParser
+    AssetsManager
+    AccountManager
+    ProfileManager
+        ProfileInstance
+    VersionsListManager

@@ -21,6 +21,45 @@ def status_function(status, progress_percentage):
 import yamcl.main
 
 test_launcher = yamcl.main.Launcher()
+print(test_launcher.startup(download_specific_libraries=True))
+#test_launcher.create_skeleton_structure()
+print("OS Family: " + test_launcher.PlatformTools.get_os_family() + "\nOS Arch: " + test_launcher.PlatformTools.get_os_arch())
+
+# Download a Minecraft
+#test_launcher.BinaryManager.download_official("1.7.4")
+#test_launcher.BinaryManager.download_official("1.5.2")
+
+# BinaryParser and LibraryParser testing
+
+#print()
+#print("BinaryParser")
+#test_parser = test_launcher.BinaryManager.get_binary_parser("1.7.4", "vanilla")
+test_parser = test_launcher.BinaryManager.get_binary_parser("1.5.2", "vanilla")
+#print("Compatible with launcher:", test_parser.is_compatible())
+#print("ID:", test_parser.get_id())
+
+#print()
+#print("LibraryParser")
+#library_parsers = test_parser.get_library_parsers()
+#for current_parser in library_parsers:
+#    print(current_parser.get_id(), "system supported:", current_parser.current_system_supported())
+
+#print("Current system natives extension:", library_parsers[-4].get_current_system_natives_extension())
+#print()
+#test_launcher.LibraryManager.download_missing_libraries(library_parsers, status_function)
+#print(test_launcher.LibraryManager.get_library_paths(library_parsers))
+
+# AssetsManager testing
+test_launcher.AssetsManager.download_asset_index(test_parser.get_assets_id())
+test_launcher.AssetsManager.download_missing_assets(test_parser.get_assets_id(), status_function)
+
+#test_launcher.ProfileManager.add_profile("Old_1.5.2")
+
+#test_launcher.ProfileManager.get_profile_instance("Latest").launch_version("1.7.4", "vanilla")
+
+# Old code
+'''
+test_launcher = yamcl.main.Launcher()
 test_launcher.startup()
 print("Data Integrity Check Holding: " + str(test_launcher.FileTools.check_data_integrity()))
 print("OS Family: " + test_launcher.get_os_family() + "\nOS Arch: " + test_launcher.get_os_arch())
@@ -41,7 +80,7 @@ print("OS Family: " + test_launcher.get_os_family() + "\nOS Arch: " + test_launc
 #print(test_launcher.LibraryManager.get_version_dependencies("1.7.4"))
 #test_launcher.ProfileManager.add_profile("Latest")
 
-#test_launcher.ProfileManager.get_profile_instance("Latest").launch_version("1.7.4", "vanilla")
+test_launcher.ProfileManager.get_profile_instance("Latest").launch_version("1.7.4", "vanilla")
 
 # 1.5.2 launching
 
@@ -51,4 +90,5 @@ print("OS Family: " + test_launcher.get_os_family() + "\nOS Arch: " + test_launc
 #test_launcher.ProfileManager.add_profile("Old_1.5.2")
 #test_launcher.ProfileManager.get_profile_instance("Old_1.5.2").launch_version("1.5.2", "vanilla")
 
-test_launcher.ProfileManager.get_profile_instance("Old_1.5.2").launch_version("1.5.2_Custom", "custom")
+#test_launcher.ProfileManager.get_profile_instance("Old_1.5.2").launch_version("1.5.2_Custom", "custom")
+'''

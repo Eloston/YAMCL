@@ -134,8 +134,8 @@ $(arch) seems to be "32" or "64"
 If natives are defined for that library, then it is natives only!
 
 Launcher Constants (net/minecraft/launcher/LauncherConstants.java):
-version name: 1.3.9
-numerical version: 13
+version name: 1.3.10
+numerical version: 14
 binary download url: https://s3.amazonaws.com/Minecraft.Download/
 resource download url: http://resources.download.minecraft.net/
 library dounlowad url: https://libraries.minecraft.net/
@@ -155,3 +155,8 @@ sounds/dig/cloth4.ogg (hash 55da1856e77cfd31a7e8c3d358e1f856c5583198)
 
 Take first two digits of hash, and it becomes directory
     Then the hash becomes the file name
+
+***Profile-Related Stuff***
+When launching the game, change current working directory to that of the profile
+    -"logs" folder created in current working directory by the game (where tester script was run)
+    -Confirmed for Minecraft 1.7.4

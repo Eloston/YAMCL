@@ -31,12 +31,12 @@ YAMCL_data/
             # natives directory for each platform and architecture combination
             # Library jar files will go in here, if this is not natives
         index.json # Contains list of libraries
+    assets/ # Includes sounds, language packs, etc. Actual data in the hash format like the vanilla launcher. Also contains custom assets too
+        objects/ # Assets like in vanilla launcher will go here. Files are stored with hash names. Named as such to work with Minecraft
+        virtual/ # Assets seen in 1.7.2 and earlier. (except Mojang does have an unused 1.7.2 json)
+            (ASSET_ID)/ # Example: legacy
+        indexes/ # Contains JSON asset indexes referred by binaries. Named as such to work with Minecraft
     bin/
-        assets/ # Includes sounds, language packs, etc. Actual data in the hash format like the vanilla launcher. Also contains custom assets too
-            objects/ # Assets like in vanilla launcher will go here. Files are stored with hash names. Named as such to work with Minecraft
-            virtual/ # Assets seen in 1.7.2 and earlier. (except Mojang does have an unused 1.7.2 json)
-                (ASSET_ID)/ # Example: legacy
-            indexes/ # Contains JSON asset indexes referred by binaries. Named as such to work with Minecraft
         vanilla/
             # Minecrafts from Mojang will go here (releases and snapshots)
             (VERSION_NAME_HERE)/
@@ -47,7 +47,6 @@ YAMCL_data/
             (CUSTOM_NAME_HERE)/
                 (CUSTOM_NAME_HERE).json # Contains info about the Minecraft version (same format as the one from Mojang)
                 (CUSTOM_NAME_HERE).jar # Actual Minecraft binary
-                metadata.json # Contains extra information for this custom version
         index.json # List of modded and vanilla Minecrafts
         versions.json # List of Minecraft versions on the Mojang servers
     profile/
@@ -59,19 +58,12 @@ YAMCL_data/
 ***Formats***
 
 Library Index JSON format:
-[
 {
-"name": "domain.blah.blah:blah_1.23", # Will be the name reported by Minecraft json files
-"path": ["domain", "blah", "blah-blah_1.23"], # Path to library directory IF LIBRARY IS NATIVES. Path to jar file IF LIBRARY IS REGULAR. Path elements are in a list.
-"natives": ["windows-${arch}", "linux", "osx"] # ONLY present if library is just natives. Contains a list of directory names for natives for platform/architecture combinations. $(arch) is the platform architecture, that will be replaced to get the actual directory name.
-},
+"domain.blah.blah:blah_1.23": # Will be the name reported by Minecraft json files
+    {
+        "path": ["domain", "blah", "blah-blah_1.23"], # Path to library directory IF LIBRARY IS NATIVES. Path to jar file IF LIBRARY IS REGULAR. Path elements are in a list.
+    },
 # Keep repeating
-]
-
-Custom Binary Metadata JSON format:
-{
-"params": "-Xmx512M", # Java parameters to pass in
-"notes": "" # User-created notes about the version
 }
 
 Binary Index JSON format:
@@ -91,10 +83,10 @@ Profile Metadata JSON format:
 }
 
 Profile Index JSON format:
-[
 {
-"name": "My Profile", # User specified friendly name
-"directory": ["My_Profile"] # Directory-friendly version of the "name" field. Path elements are in a list.
-},
+"My Profile": # User specified friendly name
+    {
+        "directory": ["My_Profile"] # Directory-friendly version of the "name" field. Path elements are in a list.
+    },
 # Keep repeating
-]
+}

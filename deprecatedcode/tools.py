@@ -14,19 +14,53 @@ along with YAMCL.  If not, see {http://www.gnu.org/licenses/}.
 '''
 
 import json
+import urllib.request
 import os.path
 import os
 import shutil
 import zipfile
-import platform
-import sys
-
-from yamcl.globals import DataPath
 
 class FileTools:
-    def __init__(self):
+    def __init__(self, current_path):
+        if (current_path == str()):
+            self.data_path = os.path.join(os.path.expanduser("~"), ".yamcl")
+        else:
+            self.data_path = current_path
+
         # Constants
         self.TEXT_ENCODING = "UTF-8"
+
+    # Relative path conversion methods
+
+    def get_full_path(self, relative_path):
+        '''
+        Converts a relative path from the root of YAMCL's data directory to an absolute path
+        Relative paths are a list containing strings of path elements (files and directories)
+        '''
+        absolute_path = self.data_path
+        for path_element in relative_path:
+            absolute_path = os.path.join(absolute_path, path_element)
+        return absolute_path
+
+    # YAMCL data specific
+
+    def create_skeleton_structure(self):
+        '''
+        Creates the skeleton structure for YAMCL data
+        '''
+        self.write_json(self.get_full_path(["lib", "index.json"]), list())
+        self.write_json(self.get_full_path(["bin", "index.json"]), list())
+        self.write_json(self.get_full_path(["profile", "index.json"]), list())
+
+    def check_data_integrity(self):
+        '''
+        Returns True if the current YAMCL data structural integrity is holding, False otherwise
+        '''
+        if (os.path.isdir(self.data_path)):
+            if (os.path.isdir(self.get_full_path(["lib"])) and os.path.isdir(self.get_full_path(["bin"])) and os.path.isdir(self.get_full_path(["profile"]))):
+                if (os.path.isfile(self.get_full_path(["lib", "index.json"])) and os.path.isfile(self.get_full_path(["bin", "index.json"])) and os.path.isfile(self.get_full_path(["profile", "index.json"]))):
+                    return True
+        return False
 
     # General methods
 
@@ -101,6 +135,12 @@ class FileTools:
         '''
         shutil.copy(source_path, destination_path)
 
+    def path_exists(self, path):
+        '''
+        Checks to see if path exists (whether a directory or file)
+        '''
+        return os.path.exists(path)
+
     def delete_file(self, path):
         '''
         Deletes a file
@@ -116,49 +156,21 @@ class FileTools:
         # TODO: use shutil.rmtree() to delete jar or natives, but not clear empty directories
         pass
 
-class PlatformTools:
-    def __init__(self, java_command):
-        self.os_info = dict()
-        if (sys.platform == "win32" or sys.platform == "cygwin"):
-            current_platform = "windows"
-        elif (sys.platform == "darwin"):
-            current_platform = "osx"
-        else:
-            # Assuming it is linux, otherwise the user wouldn't be playing Minecraft to begin with
-            current_platform = "linux"
+class NetworkTools:
+    def __init__(self):
+        protocol = "https://"
 
-        if (java_command == str()):
-            if current_platform == "windows":
-                import winreg
-                JAVA_REGISTRY_PATH = "Software\\JavaSoft\\Java Runtime Environment"
-                current_java_version = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, JAVA_REGISTRY_PATH), "CurrentVersion")[0]
-                java_binary_path = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, JAVA_REGISTRY_PATH + "\\" + current_java_version), "JavaHome")[0]
-                java_command = java_binary_path + "\\bin\\javaw.exe"
-            else:
-                java_command = "java"
-        self.java_path = shutil.which(os.path.expanduser(os.path.expandvars(java_command)))
-        # self.java_path will be none if file is not executable
-        if not self.java_path == None:
-            self.java_path = os.path.abspath(self.java_path)
+        # Base URLs
+        self.DOWNLOAD_URL = protocol + "s3.amazonaws.com/Minecraft.Download/"
+        self.RESOURCES_URL = protocol + "resources.download.minecraft.net/"
+        self.LIBRARIES_URL = protocol + "libraries.minecraft.net/" # Requires HTTPS protocol
 
-        self.os_info["family"] = current_platform
-        self.os_info["arch"] = platform.architecture(self.java_path)[0][:2]
+        # Specific URLs
+        self.VERSIONS_JSON_URL = self.DOWNLOAD_URL + "versions/versions.json"
+        self.INDEXES_URL = self.DOWNLOAD_URL + "indexes/"
 
-    def get_java_path(self):
+    def get_url_object(self, url):
         '''
-        Returns the path to the java binary
+        Returns a URL object that supports the file IO interface
         '''
-        return self.java_path
-
-    def get_os_family(self):
-        '''
-        Returns the current OS family name. Either "windows", "osx", or "linux". Will return "linux" if it is not osx or windows
-        '''
-        return self.os_info["family"]
-
-    def get_os_arch(self):
-        '''
-        Returns the architecture the OS is built for. "32" for 32-bit and "64" for 64-bit
-        Uses the Java binary for determining the architecture
-        '''
-        return self.os_info["arch"]
+        return urllib.request.urlopen(url)
