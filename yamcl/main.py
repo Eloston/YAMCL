@@ -46,6 +46,7 @@ class Launcher:
             self.ProfileManager = yamcl.profiles.ProfileManager(self)
             self.AssetsManager = yamcl.managers.AssetsManager(self)
             self.AccountManager = yamcl.managers.AccountManager()
+            self.VersionsListManager = yamcl.managers.VersionsListManager(self)
 
             return "SUCCESS"
         else:

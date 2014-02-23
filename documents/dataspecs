@@ -71,6 +71,7 @@ Binary Index JSON format:
 {
 "type": "vanilla" or "custom", # Type of binary
 "name": "1.7.2", # Version name as reported by Mojang for vanilla, and user specified name for custom
+"notes": "blah" # Only shows up if the type is custom
 },
 # Keep repeating
 ]

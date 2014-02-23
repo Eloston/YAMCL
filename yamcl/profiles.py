@@ -56,16 +56,23 @@ class ProfileManager:
         '''
         Deletes profile 'profile_name'
         '''
-        pass
+        if not profile_name in self.index:
+            raise Exception("Profile " + str(profile_name) + " does not exist") # TODO: More appropriate exception
+        self.Launcher.FileTools.delete_and_clean(str(self.BASE_PATH + DataPath(self.index[profile_name]["directory"])))
+        del self.index[profile_name]
+        self.flush_index()
 
     def get_profile_instance(self, profile_name):
         '''
         Returns a ProfileInstance of profile 'profile_name'
         '''
+        if not profile_name in self.index:
+            raise Exception("Profile " + str(profile_name) + " does not exist") # TODO: More appropriate exception
         if profile_name in self.profile_instances:
             return self.profile_instances[profile_name]
         else:
-            new_profile_instance = ProfileInstance(self.Launcher, profile_name)
+            profile_directory = self.BASE_PATH + DataPath(self.index[profile_name]["directory"])
+            new_profile_instance = ProfileInstance(self.Launcher, profile_name, profile_directory)
             self.profile_instances[profile_name] = new_profile_instance
             return new_profile_instance
 
@@ -84,11 +91,11 @@ class ProfileManager:
         pass
 
 class ProfileInstance:
-    def __init__(self, launcher_obj, name):
+    def __init__(self, launcher_obj, name, profile_path):
         self.Launcher = launcher_obj
 
         self.profile_name = name
-        self.data_path = self.Launcher.ProfileManager.BASE_PATH + DataPath(name)
+        self.data_path = profile_path
         self.metadata = self.Launcher.FileTools.read_json(str(self.data_path + DataPath("yamcl_metadata.json")))
         self.game_process = None
 
@@ -166,7 +173,7 @@ class ProfileInstance:
             raise Exception("Could not find a Java binary to launch") # TODO: more appropriate exception
         launch_arguments.append(self.Launcher.PlatformTools.get_java_path())
         launch_arguments.append("-Xmx1G") # TODO: More customizeable arguments
-        libraries_dict = self.Launcher.LibraryManager.get_library_paths(game_binary_parser.get_library_parsers())
+        libraries_dict = self.Launcher.LibraryManager.get_platform_paths(game_binary_parser.get_library_parsers())
         launch_arguments.append("-Djava.library.path=" + '"' + ":".join(libraries_dict["natives"]) + '"')
         launch_arguments.append("-cp " + ":".join(libraries_dict["jars"] + [version_paths["jar"]]))
         launch_arguments.append(game_binary_parser.get_launch_class())

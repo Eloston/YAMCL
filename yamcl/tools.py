@@ -20,6 +20,7 @@ import shutil
 import zipfile
 import platform
 import sys
+import errno
 
 from yamcl.globals import DataPath
 
@@ -95,26 +96,36 @@ class FileTools:
         '''
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-    def copy_files(self, source_path, destination_path):
+    def copy(self, source_path, destination_path):
         '''
         Copies file 'source_path' into directory or file 'destination_path'
         '''
-        shutil.copy(source_path, destination_path)
-
-    def delete_file(self, path):
-        '''
-        Deletes a file
-        '''
-        os.remove(path)
+        self.add_missing_dirs(destination_path)
+        if os.path.isdir(source_path):
+            shutil.copytree(source_path, destination_path)
+        else:
+            shutil.copy(source_path, destination_path)
 
     def delete_and_clean(self, path):
         '''
         Deletes path 'path' (will recursively delete directory)
         Directories that have become empty will be removed starting from the file's directory.
         '''
-        # TODO: use os.removedirs(path) to delete empty directories
-        # TODO: use shutil.rmtree() to delete jar or natives, but not clear empty directories
-        pass
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            os.remove(path)
+        try:
+            os.removedirs(os.path.dirname(path))
+        except OSError as current_exception:
+            if not current_exception.errno == errno.ENOTEMPTY:
+                raise current_exception
+
+    def get_file_name(self, path):
+        '''
+        Wrapper around os.path.basename
+        '''
+        return os.path.basename(path)
 
 class PlatformTools:
     def __init__(self, java_command):

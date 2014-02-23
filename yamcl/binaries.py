@@ -27,11 +27,17 @@ class BinaryManager:
     def flush_index(self):
         self.Launcher.FileTools.write_json(self.index_path, self.index)
 
-    def version_exists(self, version_id, version_type):
+    def get_version_index(self, version_id, version_type):
+        version_count = 0
         for current_version in self.index:
             if current_version["name"] == version_id and current_version["type"] == version_type:
-                return True
-        return False
+                return version_count
+            else:
+                version_count += 1
+        return -1
+
+    def version_exists(self, version_id, version_type):
+        return self.get_version_index(version_id, version_type) > -1
 
     def get_paths(self, version_id, version_type):
         path_dict = dict()        
@@ -44,7 +50,7 @@ class BinaryManager:
         if not self.version_exists(version_id, version_type):
             raise Exception("Non-existant version") # TODO: More appropriate exception
         tmp_paths = self.get_paths(version_id, version_type)
-        new_instance = BinaryParser(self.Launcher, tmp_paths["json"])
+        new_instance = BinaryParser(self.Launcher, tmp_paths["json"], (version_type == "custom"))
         return new_instance
 
     def download_official(self, version_id):
@@ -64,16 +70,74 @@ class BinaryManager:
         self.flush_index()
 
     def install_custom(self, version_id, version_path, version_json):
-        pass
+        if self.version_exists(version_id, "custom"):
+            raise Exception("Version already exists") # TODO: More appropriate exception
+        paths_dict = self.get_paths(version_id, "custom")
+        self.Launcher.FileTools.copy(version_path, paths_dict["jar"])
+        self.Launcher.FileTools.copy(version_json, paths_dict["json"])
+
+        current_listing = dict()
+        current_listing["type"] = "custom"
+        current_listing["name"] = version_id
+        current_listing["notes"] = str()
+
+        self.index.append(current_listing)
+
+        self.flush_index()
 
     def custom_from_vanilla(self, vanilla_id, custom_id):
-        pass
+        if self.version_exists(custom_id, "custom"):
+            raise Exception("Version already exists") # TODO: More appropriate exception
+        if not self.version_exists(vanilla_id, "vanilla"):
+            raise Exception("Vanilla version does not exist") # TODO: More appropriate exception
+        vanilla_paths = self.get_paths(vanilla_id, "vanilla")
+        custom_paths = self.get_paths(custom_id, "custom")
+        self.Launcher.FileTools.copy(vanilla_paths["jar"], custom_paths["jar"])
+        self.Launcher.FileTools.copy(vanilla_paths["json"], custom_paths["json"])
+
+        current_listing = dict()
+        current_listing["type"] = "custom"
+        current_listing["name"] = custom_id
+        current_listing["notes"] = str()
+
+        self.index.append(current_listing)
+
+        self.flush_index()
+
+    def delete(self, version_id, version_type):
+        if not self.version_exists(version_id, version_type):
+            raise Exception("Version does not exist") # TODO: More appropriate exception
+        index_count = 0
+        for current_version in self.index:
+            if current_version["type"] == version_type and current_version["name"] == version_id:
+                break
+            else:
+                index_count += 1
+        del self.index[index_count]
+        self.flush_index()
+        self.Launcher.FileTools.delete_and_clean(str(self.get_paths(version_id, version_type)["directory"]))
+
+    def get_notes(self, version_id):
+        if not self.version_exists(version_id, "custom"):
+            raise Exception("Custom version does not exist") # TODO: More appropriate exception
+        return self.index[self.get_version_index(version_id, "custom")]["notes"]
+
+    def set_notes(self, version_id, new_notes):
+        if not self.version_exists(version_id, "custom"):
+            raise Exception("Custom version does not exist") # TODO: More appropriate exception
+        self.index[self.get_version_index(version_id, "custom")]["notes"] = new_notes
+        self.flush_index()
 
 class BinaryParser:
-    def __init__(self, launcher_obj, json_path):
+    def __init__(self, launcher_obj, json_path, custom_bool):
         self.Launcher = launcher_obj
+        self.is_custom = custom_bool
 
+        self.info_path = json_path
         self.json_info = self.Launcher.FileTools.read_json(json_path)
+
+    def flush_info(self):
+        self.Launcher.FileTools.write_json(self.info_path, self.json_info)
 
     def get_library_parsers(self):
         parser_list = list()
@@ -101,3 +165,37 @@ class BinaryParser:
             return self.json_info["assets"]
         else:
             return "legacy"
+
+    def delete_library(self, library_id):
+        if not self.is_custom:
+            raise Exception("Not a custom version") # TODO: More appropriate exception
+        library_count = 0
+        for current_library in self.json_info["libraries"]:
+            if current_library["name"] == library_id:
+                break
+            else:
+                library_count += 1
+        del self.json_info["libraries"][library_count]
+        self.flush_info()
+
+    def add_library(self, library_id, rules_dict=None, natives_dict=None):
+        if not self.is_custom:
+            raise Exception("Not a custom version") # TODO: More appropriate exception
+        library_dict = dict()
+        library_dict["name"] = library_id
+        if not natives_dict == None:
+            library_dict["natives"] = natives_dict
+        if not rules_dict == None:
+            rules_list = list()
+            for current_platform in rules_dict:
+                current_rule = dict()
+                current_rule["os"] = dict()
+                current_rule["os"]["name"] = current_platform
+                if rules_dict[current_platform]:
+                    current_rule["action"] = "allow"
+                else:
+                    current_rule["action"] = "disallow"
+                rules_list.append(current_rule)
+            library_dict["rules"] = rules_list
+        self.json_info["libraries"].append(library_dict)
+        self.flush_info()

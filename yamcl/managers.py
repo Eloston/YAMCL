@@ -21,7 +21,7 @@ class AssetsManager:
 
         self.BASE_PATH = DataPath("assets")
 
-    def download_asset_index(self, asset_id):
+    def download_index(self, asset_id):
         '''
         Downloads the JSON asset index specified by 'asset_id'
         '''
@@ -29,7 +29,7 @@ class AssetsManager:
         asset_index_path = str(self.BASE_PATH + DataPath("indexes/" + asset_id + ".json"))
         self.Launcher.FileTools.write_object(asset_index_path, asset_url_object)
 
-    def download_missing_assets(self, asset_id, progress_function=None):
+    def download_missing(self, asset_id, progress_function=None):
         '''
         Downloads assets specified in 'asset_id' that are not already downloaded
         '''
@@ -107,6 +107,9 @@ class AccountManager:
         Returns boolean stating whether the launcher is logged in or not
         '''
         return self.IS_OFFLINE
+
+    def shutdown(self):
+        pass
 
 class VersionsListManager:
     def __init__(self, launcher_obj):

@@ -38,10 +38,19 @@ class DataPath:
         if isinstance(new_path, list):
             self.relative_path = new_path
         elif isinstance(new_path, str):
-            self.relative_path = new_path.split("/")
-        # Remove extra slash at the end
-        if self.relative_path[-1] == str():
-            del self.relative_path[-1]
+            new_path = os.path.normpath(new_path)
+            self.relative_path = list()
+            if os.path.isabs(new_path):
+                tmp_relative = os.path.relpath(new_path, start=DataPath.data_path)
+            else:
+                tmp_relative = new_path
+            while True:
+                tmp_split = os.path.split(tmp_relative)
+                self.relative_path = [tmp_split[1]] + self.relative_path
+                if tmp_split[0] == str():
+                    break
+                else:
+                    tmp_relative = tmp_split[0]
 
     def __str__(self):
         '''
@@ -63,6 +72,12 @@ class DataPath:
         Adds the relative paths together, and returns a new path object
         '''
         return DataPath(self.relative_path + other_path.relative_path)
+
+    def __sub__(self, other_path):
+        '''
+        Returns a new path object that has a path relative to other_path
+        '''
+        return DataPath(os.path.relpath(str(self), start=str(other_path)))
 
     def __hash__(self):
         return str(self).__hash__()
@@ -88,6 +103,12 @@ class DataPath:
         Returns the DataPath of the containing directory.
         '''
         return DataPath(self.relative_path[:-1])
+
+    def file_name(self):
+        '''
+        Returns the last path element
+        '''
+        return self.relative_path[-1]
 
     def get_relative_path(self):
         '''
