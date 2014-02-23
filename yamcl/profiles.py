@@ -171,11 +171,11 @@ class ProfileInstance:
         launch_arguments = list()
         if self.Launcher.PlatformTools.get_java_path() == None:
             raise Exception("Could not find a Java binary to launch") # TODO: more appropriate exception
-        launch_arguments.append(self.Launcher.PlatformTools.get_java_path())
+        launch_arguments.append('"' + self.Launcher.PlatformTools.get_java_path() + '"')
         launch_arguments.append("-Xmx1G") # TODO: More customizeable arguments
         libraries_dict = self.Launcher.LibraryManager.get_platform_paths(game_binary_parser.get_library_parsers())
-        launch_arguments.append("-Djava.library.path=" + '"' + ":".join(libraries_dict["natives"]) + '"')
-        launch_arguments.append("-cp " + ":".join(libraries_dict["jars"] + [version_paths["jar"]]))
+        launch_arguments.append("-Djava.library.path=" + '"' + self.Launcher.PlatformTools.JAVA_PATH_DELIM.join(libraries_dict["natives"]) + '"')
+        launch_arguments.append("-cp " + self.Launcher.PlatformTools.JAVA_PATH_DELIM.join(libraries_dict["jars"] + [version_paths["jar"]]))
         launch_arguments.append(game_binary_parser.get_launch_class())
         launch_arguments.append(game_binary_parser.get_arguments(game_arguments))
         os.chdir(game_arguments["game_directory"]) # Needed for logs to be created in the proper directory

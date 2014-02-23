@@ -130,8 +130,10 @@ class FileTools:
 class PlatformTools:
     def __init__(self, java_command):
         self.os_info = dict()
+        self.JAVA_PATH_DELIM = ":"
         if (sys.platform == "win32" or sys.platform == "cygwin"):
             current_platform = "windows"
+            self.JAVA_PATH_DELIM = ";" # Every platform except Windows uses colon
         elif (sys.platform == "darwin"):
             current_platform = "osx"
         else:
