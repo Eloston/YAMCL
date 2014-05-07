@@ -32,27 +32,28 @@ class ProfileManager:
         '''
         self.Launcher.FileTools.write_json(str(self.BASE_PATH + DataPath("index.json")), self.index)
 
-    def get_java_path(self):
+    def get_profile_list(self):
         '''
-        Returns the path to the java binary
+        Returns a list of all profiles
         '''
-        return self.java_path
+        return list(self.index.keys())
 
-    def add_profile(self, profile_name):
+    def new(self, profile_name):
         '''
         Creates a new profile with name 'profile_name'
         '''
         if not profile_name in self.index:
             self.index[profile_name] = dict()
-            self.index[profile_name]["directory"] = [profile_name] # TODO: Convert to filesystem-friendly name
+            self.index[profile_name]["directory"] = [self.Launcher.FileTools.create_valid_name(profile_name)]
             profile_metadata = dict()
             profile_metadata["notes"] = str()
-            profile_metadata["vanillaversions"] = list()
-            profile_metadata["customversions"] = list()
+            profile_metadata["lastversion"] = dict()
+            profile_metadata["lastversion"]["id"] = ""
+            profile_metadata["lastversion"]["type"] = ""
             self.Launcher.FileTools.write_json(str(self.BASE_PATH + DataPath(profile_name + "/yamcl_metadata.json")), profile_metadata)
             self.flush_index()
 
-    def delete_profile(self, profile_name):
+    def delete(self, profile_name):
         '''
         Deletes profile 'profile_name'
         '''
@@ -60,6 +61,20 @@ class ProfileManager:
             raise Exception("Profile " + str(profile_name) + " does not exist") # TODO: More appropriate exception
         self.Launcher.FileTools.delete_and_clean(str(self.BASE_PATH + DataPath(self.index[profile_name]["directory"])))
         del self.index[profile_name]
+        self.flush_index()
+
+    def rename(self, current_profile_name, new_profile_name):
+        '''
+        Renames a profile 'current_profile_name' to a new name 'new_profile_name'
+        '''
+        if not current_profile_name in self.index:
+            raise Exception("Cannot rename: " + current_profile_name + " does not exist")
+        if new_profile_name in self.index:
+            raise Exception("Cannot rename: " + new_profile_name + " already exists")
+        self.Launcher.FileTools.rename(str(self.BASE_PATH + DataPath(self.index[current_profile_name]["directory"])), str(self.BASE_PATH + DataPath(self.Launcher.FileTools.create_valid_name(new_profile_name))))
+        del self.index[current_profile_name]
+        self.index[new_profile_name] = dict()
+        self.index[new_profile_name]["directory"] = [self.Launcher.FileTools.create_valid_name(new_profile_name)]
         self.flush_index()
 
     def get_profile_instance(self, profile_name):
@@ -105,6 +120,26 @@ class ProfileInstance:
         '''
         self.Launcher.FileTools.write_json(str(self.data_path + DataPath("yamcl_metadata.json")), self.metadata)
 
+    def get_name(self):
+        '''
+        Returns the profile name
+        '''
+        return self.profile_name
+
+    def get_last_version(self):
+        '''
+        Returns the last version launched
+        '''
+        return self.metadata["lastversion"]
+
+    def set_last_version(self, version_id, version_type):
+        '''
+        Sets the last version launched
+        '''
+        self.metadata["lastversion"]["id"] = version_id
+        self.metadata["lastversion"]["type"] = version_type
+        self.flush_metadata()
+
     def get_notes(self):
         '''
         Returns a string containing the notes
@@ -116,22 +151,6 @@ class ProfileInstance:
         Updates notes for this profile
         '''
         self.metadata["notes"] = new_notes
-        self.flush_metadata()
-
-    def add_version(self, version_id, version_type):
-        '''
-        Adds a version to the metadata
-        '''
-        if not version_id in self.metadata[version_type + "versions"]:
-            self.metadata[version_type + "versions"].append(version_id)
-        self.flush_metadata()
-
-    def delete_version(self, version_id, version_type):
-        '''
-        Removes a version from the metadata
-        '''
-        if version_id in self.metadata[version_type + "versions"]:
-            self.metadata.remove(version_type + "versions")
         self.flush_metadata()
 
     def check_game_running(self):
@@ -155,16 +174,14 @@ class ProfileInstance:
         game_arguments["game_assets"] = self.Launcher.AssetsManager.get_paths(game_binary_parser.get_assets_id())["directory"]
         game_arguments["assets_root"] = str(self.Launcher.AssetsManager.BASE_PATH)
         game_arguments["assets_index_name"] = game_binary_parser.get_assets_id()
-        if self.Launcher.AccountManager.is_offline():
-            game_arguments["auth_username"] = self.Launcher.AccountManager.get_game_username()
-            game_arguments["auth_player_name"] = game_arguments["auth_username"]
-            game_arguments["auth_uuid"] = "00000000-0000-0000-0000-000000000000"
-            game_arguments["auth_session"] = "-"
-            game_arguments["auth_access_token"] = "0"
-            game_arguments["user_type"] = "legacy"
-            game_arguments["user_properties"] = str(dict())
-        else:
-            pass # TODO: Implement authentication
+
+        game_arguments["auth_username"] = self.Launcher.AccountManager.get_game_username()
+        game_arguments["auth_player_name"] = self.Launcher.AccountManager.get_account_username()
+        game_arguments["auth_uuid"] = self.Launcher.AccountManager.get_uuid()
+        game_arguments["auth_session"] = self.Launcher.AccountManager.get_session()
+        game_arguments["auth_access_token"] = self.Launcher.AccountManager.get_access_token()
+        game_arguments["user_type"] = self.Launcher.AccountManager.get_user_type()
+        game_arguments["user_properties"] = self.Launcher.AccountManager.get_user_properties()
 
         version_paths = self.Launcher.BinaryManager.get_paths(version_id, version_type)
 
@@ -181,7 +198,7 @@ class ProfileInstance:
         os.chdir(game_arguments["game_directory"]) # Needed for logs to be created in the proper directory
         self.game_process = subprocess.Popen(" ".join(launch_arguments), shell=True)
 
-    def shutdown(self):
+    def kill_game(self):
         '''
         Shuts down Minecraft if running
         '''

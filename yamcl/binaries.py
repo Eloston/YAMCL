@@ -39,6 +39,14 @@ class BinaryManager:
     def version_exists(self, version_id, version_type):
         return self.get_version_index(version_id, version_type) > -1
 
+    def get_installed_versions(self):
+        installed_versions = dict()
+        installed_versions["vanilla"] = list()
+        installed_verisons["custom"] = list()
+        for current_version in self.index:
+            installed_versions[current_version["type"]].append(current_version["name"])
+        return installed_versions
+
     def get_paths(self, version_id, version_type):
         path_dict = dict()        
         path_dict["directory"] = self.BASE_PATH + DataPath(version_type+"/"+version_id)
@@ -116,6 +124,21 @@ class BinaryManager:
         del self.index[index_count]
         self.flush_index()
         self.Launcher.FileTools.delete_and_clean(str(self.get_paths(version_id, version_type)["directory"]))
+
+    def rename(self, current_version_id, new_version_id):
+        if not self.version_exists(current_version_id, "custom"):
+            raise Exception("Cannot rename: " + current_version_id + " does not exist")
+        if self.version_exists(new_version_id, "custom"):
+            raise Exception("Cannot rename: " + new_version_id + " already exists")
+        old_id_paths = self.get_paths(current_version_id, "custom")
+        new_id_paths = self.get_paths(new_version_id, "custom")
+        self.Launcher.FileTools.add_missing_dirs(new_id_paths["jar"])
+        for file_type in ["jar", "json"]:
+            self.Launcher.FileTools.move(old_id_paths[file_type], new_id_paths[file_type])
+        self.Launcher.FileTools.delete_and_clean(str(old_id_paths["directory"]))
+        index_listing = self.index[self.get_version_index(current_version_id, "custom")]
+        index_listing["name"] = new_version_id
+        self.flush_index()
 
     def get_notes(self, version_id):
         if not self.version_exists(version_id, "custom"):

@@ -19,9 +19,9 @@ import hashlib
 from yamcl.globals import DataPath, URL
 
 class LibraryManager:
-    def __init__(self, launcher_obj, download_specific_libraries):
+    def __init__(self, launcher_obj):
         self.Launcher = launcher_obj
-        self.download_exclusive = download_specific_libraries
+        self.download_exclusive = True
         self.BASE_PATH = DataPath("lib")
 
         self.index_path = str(self.BASE_PATH + DataPath("index.json"))
@@ -29,6 +29,12 @@ class LibraryManager:
 
     def flush_index(self):
         self.Launcher.FileTools.write_json(self.index_path, self.index)
+
+    def is_download_exclusive(self):
+        return self.download_exclusive
+
+    def set_download_exclusive(self, value):
+        self.download_exclusive = value
 
     def is_library_existant(self, library_parser):
         return library_parser.get_id() in self.index
@@ -143,6 +149,15 @@ class LibraryManager:
             raise Exception("Library is not existant") # TODO: More appropriate exception
         self.Launcher.FileTools.delete_and_clean(str(self.BASE_PATH + self.get_library_path(library_id)))
         del self.index[library_id]
+        self.flush_index()
+
+    def rename(self, current_library_id, new_library_id):
+        if not current_library_id in self.index:
+            raise Exception("Cannot rename library: " + current_library_id + " does not exist")
+        if new_library_id in self.index:
+            raise Exception("Cannot rename library: " + new_library_id + " already exists")
+        self.index[new_library_id] = self.index[current_library_id]
+        del self.index[current_library_id]
         self.flush_index()
 
 class LibraryParser:

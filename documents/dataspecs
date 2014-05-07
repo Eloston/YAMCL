@@ -79,8 +79,10 @@ Binary Index JSON format:
 Profile Metadata JSON format:
 {
 "notes": "", # Notes about the profile
-"vanillaversions": ["1.5.2", "13w22a", "1.5.1"], # Vanilla versions available to run by name
-"customversions": ["1.5.2_Optifine", "13w22a_NoHorses"] # Custom versions available to run by name
+"lastversion": { # The last version to be launched
+    "id": "1.7.2",
+    "type": "vanilla"
+    }
 }
 
 Profile Index JSON format:

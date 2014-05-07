@@ -90,6 +90,9 @@ class FileTools:
 
     # Other methods
 
+    def get_root_data_path(self):
+        return DataPath(list())
+
     def add_missing_dirs(self, file_path):
         '''
         Recursively adds the directories that are missing on file path 'file_path'
@@ -121,11 +124,35 @@ class FileTools:
             if not current_exception.errno == errno.ENOTEMPTY:
                 raise current_exception
 
+    def create_valid_name(self, name):
+        '''
+        Creates a filesystem-friendly name
+        '''
+        new_name = ""
+        for i in name:
+            if (i.isalnum() or i in "_-.()[]{}"):
+                new_name += i
+            else:
+                new_name += "_"
+        return new_name
+
     def get_file_name(self, path):
         '''
         Wrapper around os.path.basename
         '''
         return os.path.basename(path)
+
+    def rename(self, src, dst):
+        '''
+        Wrapper around os.rename
+        '''
+        os.rename(src, dst)
+
+    def move(self, src, dst):
+        '''
+        Wrapper around shutil.move
+        '''
+        shutil.move(src, dst)
 
 class PlatformTools:
     def __init__(self, java_command):
@@ -146,7 +173,7 @@ class PlatformTools:
                 JAVA_REGISTRY_PATH = "Software\\JavaSoft\\Java Runtime Environment"
                 current_java_version = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, JAVA_REGISTRY_PATH), "CurrentVersion")[0]
                 java_binary_path = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, JAVA_REGISTRY_PATH + "\\" + current_java_version), "JavaHome")[0]
-                java_command = java_binary_path + "\\bin\\javaw.exe"
+                java_command = java_binary_path + "\\bin\\java.exe"
             else:
                 java_command = "java"
         self.java_path = shutil.which(os.path.expanduser(os.path.expandvars(java_command)))

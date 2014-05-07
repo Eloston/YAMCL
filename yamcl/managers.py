@@ -87,7 +87,14 @@ class AssetsManager:
 class AccountManager:
     def __init__(self):
         self.GAME_USERNAME = "Player"
+        self.ACCOUNT_USERNAME = None
         self.IS_OFFLINE = True
+
+    def is_offline(self):
+        '''
+        Returns boolean stating whether the launcher is logged in or not
+        '''
+        return self.IS_OFFLINE
 
     def set_game_username(self, new_username):
         '''
@@ -102,11 +109,56 @@ class AccountManager:
         '''
         return self.GAME_USERNAME
 
-    def is_offline(self):
+    def get_account_username(self):
         '''
-        Returns boolean stating whether the launcher is logged in or not
+        Gets the username of the premium account
         '''
-        return self.IS_OFFLINE
+        if (self.IS_OFFLINE):
+            return self.GAME_USERNAME
+        else:
+            raise Exception("Unimplemented official login")
+
+    def get_uuid(self):
+        '''
+        Returns the player UUID
+        '''
+        if (self.IS_OFFLINE):
+            return "00000000-0000-0000-0000-000000000000"
+        else:
+            raise Exception("Unimplemented official login")
+
+    def get_session(self):
+        '''
+        Returns the session id
+        '''
+        if (self.IS_OFFLINE):
+            return "-"
+        else:
+            raise Exception("Unimplemented official login")
+
+    def get_access_token(self):
+        '''
+        Returns the access token
+        '''
+        if (self.IS_OFFLINE):
+            return "0"
+        else:
+            raise Exception("Unimplemented official login")
+
+    def get_user_type(self):
+        '''
+        Returns the account type
+        '''
+        if (self.IS_OFFLINE):
+            return "legacy"
+        else:
+            raise Exception("Unimplemented official login")
+
+    def get_user_properties(self):
+        if (self.IS_OFFLINE):
+            return str(dict())
+        else:
+            raise Exception("Unimplemented official login")
 
     def shutdown(self):
         pass

@@ -25,13 +25,13 @@ import yamcl.profiles
 from yamcl.globals import DataPath
 
 class Launcher:
-    def __init__(self, data_path=str()):
+    def __init__(self):
         self.COMPATIBLE_VERSION = 14
         self.PLATFORM_LIST = ["linux", "windows", "osx"]
 
         self.FileTools = yamcl.tools.FileTools()
 
-    def startup(self, data_path=str(), platform_override=str(), java_command=str(), download_specific_libraries=True):
+    def startup(self, data_path=str(), java_command=str()):
         '''
         -Initializes all the classes.
         -"data_path" has path to YAMCL_data. If blank, set path to the current directory of this program.
@@ -42,7 +42,7 @@ class Launcher:
             self.PlatformTools = yamcl.tools.PlatformTools(java_command)
 
             self.BinaryManager = yamcl.binaries.BinaryManager(self)
-            self.LibraryManager = yamcl.libraries.LibraryManager(self, download_specific_libraries)
+            self.LibraryManager = yamcl.libraries.LibraryManager(self)
             self.ProfileManager = yamcl.profiles.ProfileManager(self)
             self.AssetsManager = yamcl.managers.AssetsManager(self)
             self.AccountManager = yamcl.managers.AccountManager()
@@ -65,7 +65,7 @@ class Launcher:
         Returns True if the current YAMCL data structural integrity is holding, False otherwise
         '''
         try:
-            if (DataPath(str()).is_directory()):
+            if (self.FileTools.get_root_data_path().is_directory()):
                 if (DataPath("lib").is_directory() and DataPath("bin").is_directory() and DataPath("profile").is_directory()):
                     if (not DataPath("lib/index.json").is_directory() and not DataPath("bin/index.json").is_directory() and not DataPath("profile/index.json").is_directory()):
                         return True
@@ -77,4 +77,4 @@ class Launcher:
         '''
         Launcher cleans itself up and exits
         '''
-        pass
+        self.AccountManager.shutdown()
