@@ -13,21 +13,22 @@ You should have received a copy of the GNU General Public License
 along with YAMCL.  If not, see {http://www.gnu.org/licenses/}.
 '''
 
-from yamcl.globals import DataPath, URL
+from yamcl.tools import FileTools
+from yamcl.globals import URL
 import yamcl.libraries
 
 class BinaryManager:
     def __init__(self, launcher_obj):
         self.Launcher = launcher_obj
-        self.BASE_PATH = DataPath("bin")
+        self.BASE_PATH = self.Launcher.ROOT_PATH.joinpath("bin")
 
-        self.index_path = str(self.BASE_PATH + DataPath("index.json"))
-        self.index = self.Launcher.FileTools.read_json(self.index_path)
+        self.index_path = str(self.BASE_PATH.joinpath("index.json"))
+        self.index = FileTools.read_json(self.index_path)
 
-    def flush_index(self):
-        self.Launcher.FileTools.write_json(self.index_path, self.index)
+    def _flush_index(self):
+        FileTools.write_json(self.index_path, self.index)
 
-    def get_version_index(self, version_id, version_type):
+    def _get_version_index(self, version_id, version_type):
         version_count = 0
         for current_version in self.index:
             if current_version["name"] == version_id and current_version["type"] == version_type:
@@ -37,21 +38,21 @@ class BinaryManager:
         return -1
 
     def version_exists(self, version_id, version_type):
-        return self.get_version_index(version_id, version_type) > -1
+        return self._get_version_index(version_id, version_type) > -1
 
     def get_installed_versions(self):
         installed_versions = dict()
         installed_versions["vanilla"] = list()
-        installed_verisons["custom"] = list()
+        installed_versions["custom"] = list()
         for current_version in self.index:
             installed_versions[current_version["type"]].append(current_version["name"])
         return installed_versions
 
     def get_paths(self, version_id, version_type):
         path_dict = dict()        
-        path_dict["directory"] = self.BASE_PATH + DataPath(version_type+"/"+version_id)
-        path_dict["jar"] = str(path_dict["directory"] + DataPath(version_id+".jar"))
-        path_dict["json"] = str(path_dict["directory"] + DataPath(version_id+".json"))
+        path_dict["directory"] = self.BASE_PATH.joinpath(version_type+"/"+version_id)
+        path_dict["jar"] = str(path_dict["directory"].joinpath(version_id+".jar"))
+        path_dict["json"] = str(path_dict["directory"].joinpath(version_id+".json"))
         return path_dict
 
     def get_binary_parser(self, version_id, version_type):
@@ -66,8 +67,8 @@ class BinaryManager:
             raise Exception("Version " + version_id + " already exists") # TODO: More appropriate exception
         paths_dict = self.get_paths(version_id, "vanilla")
 
-        self.Launcher.FileTools.write_object(paths_dict["jar"], URL(["versions", version_id, version_id + ".jar"], URL.DOWNLOAD).url_object())
-        self.Launcher.FileTools.write_object(paths_dict["json"], URL(["versions", version_id, version_id + ".json"], URL.DOWNLOAD).url_object())
+        FileTools.write_object(paths_dict["jar"], URL(["versions", version_id, version_id + ".jar"], URL.DOWNLOAD).url_object())
+        FileTools.write_object(paths_dict["json"], URL(["versions", version_id, version_id + ".json"], URL.DOWNLOAD).url_object())
 
         current_listing = dict()
         current_listing["type"] = "vanilla"
@@ -75,14 +76,14 @@ class BinaryManager:
 
         self.index.append(current_listing)
 
-        self.flush_index()
+        self._flush_index()
 
     def install_custom(self, version_id, version_path, version_json):
         if self.version_exists(version_id, "custom"):
             raise Exception("Version already exists") # TODO: More appropriate exception
         paths_dict = self.get_paths(version_id, "custom")
-        self.Launcher.FileTools.copy(version_path, paths_dict["jar"])
-        self.Launcher.FileTools.copy(version_json, paths_dict["json"])
+        FileTools.copy(version_path, paths_dict["jar"])
+        FileTools.copy(version_json, paths_dict["json"])
 
         current_listing = dict()
         current_listing["type"] = "custom"
@@ -91,7 +92,7 @@ class BinaryManager:
 
         self.index.append(current_listing)
 
-        self.flush_index()
+        self._flush_index()
 
     def custom_from_vanilla(self, vanilla_id, custom_id):
         if self.version_exists(custom_id, "custom"):
@@ -100,8 +101,8 @@ class BinaryManager:
             raise Exception("Vanilla version does not exist") # TODO: More appropriate exception
         vanilla_paths = self.get_paths(vanilla_id, "vanilla")
         custom_paths = self.get_paths(custom_id, "custom")
-        self.Launcher.FileTools.copy(vanilla_paths["jar"], custom_paths["jar"])
-        self.Launcher.FileTools.copy(vanilla_paths["json"], custom_paths["json"])
+        FileTools.copy(vanilla_paths["jar"], custom_paths["jar"])
+        FileTools.copy(vanilla_paths["json"], custom_paths["json"])
 
         current_listing = dict()
         current_listing["type"] = "custom"
@@ -110,7 +111,7 @@ class BinaryManager:
 
         self.index.append(current_listing)
 
-        self.flush_index()
+        self._flush_index()
 
     def delete(self, version_id, version_type):
         if not self.version_exists(version_id, version_type):
@@ -122,8 +123,8 @@ class BinaryManager:
             else:
                 index_count += 1
         del self.index[index_count]
-        self.flush_index()
-        self.Launcher.FileTools.delete_and_clean(str(self.get_paths(version_id, version_type)["directory"]))
+        self._flush_index()
+        FileTools.delete_and_clean(str(self.get_paths(version_id, version_type)["directory"]))
 
     def rename(self, current_version_id, new_version_id):
         if not self.version_exists(current_version_id, "custom"):
@@ -132,24 +133,24 @@ class BinaryManager:
             raise Exception("Cannot rename: " + new_version_id + " already exists")
         old_id_paths = self.get_paths(current_version_id, "custom")
         new_id_paths = self.get_paths(new_version_id, "custom")
-        self.Launcher.FileTools.add_missing_dirs(new_id_paths["jar"])
+        FileTools.add_missing_dirs(new_id_paths["jar"])
         for file_type in ["jar", "json"]:
-            self.Launcher.FileTools.move(old_id_paths[file_type], new_id_paths[file_type])
-        self.Launcher.FileTools.delete_and_clean(str(old_id_paths["directory"]))
-        index_listing = self.index[self.get_version_index(current_version_id, "custom")]
+            FileTools.move(old_id_paths[file_type], new_id_paths[file_type])
+        FileTools.delete_and_clean(str(old_id_paths["directory"]))
+        index_listing = self.index[self._get_version_index(current_version_id, "custom")]
         index_listing["name"] = new_version_id
-        self.flush_index()
+        self._flush_index()
 
     def get_notes(self, version_id):
         if not self.version_exists(version_id, "custom"):
             raise Exception("Custom version does not exist") # TODO: More appropriate exception
-        return self.index[self.get_version_index(version_id, "custom")]["notes"]
+        return self.index[self._get_version_index(version_id, "custom")]["notes"]
 
     def set_notes(self, version_id, new_notes):
         if not self.version_exists(version_id, "custom"):
             raise Exception("Custom version does not exist") # TODO: More appropriate exception
-        self.index[self.get_version_index(version_id, "custom")]["notes"] = new_notes
-        self.flush_index()
+        self.index[self._get_version_index(version_id, "custom")]["notes"] = new_notes
+        self._flush_index()
 
 class BinaryParser:
     def __init__(self, launcher_obj, json_path, custom_bool):
@@ -157,10 +158,10 @@ class BinaryParser:
         self.is_custom = custom_bool
 
         self.info_path = json_path
-        self.json_info = self.Launcher.FileTools.read_json(json_path)
+        self.json_info = FileTools.read_json(json_path)
 
     def flush_info(self):
-        self.Launcher.FileTools.write_json(self.info_path, self.json_info)
+        FileTools.write_json(self.info_path, self.json_info)
 
     def get_library_parsers(self):
         parser_list = list()

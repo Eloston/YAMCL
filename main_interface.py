@@ -32,14 +32,15 @@ if __name__ == '__main__':
     while not startup_status == "SUCCESS":
         startup_status = main_launcher.startup(yamcl_data_path)
         if startup_status == "FAIL_DATACORRUPT":
-            clicked_button = QtGui.QMessageBox.critical(splash_screen, "YAMCL Data Error", "Your YAMCL data at " + str(yamcl.main.DataPath(str())) + " is missing or corrupt.\nWould you like to initialize the directory? Click Cancel to exit YAMCL.", QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel)
+            clicked_button = QtGui.QMessageBox.critical(splash_screen, "YAMCL Data Error", "Your YAMCL data at " + str(main_launcher.ROOT_PATH) + " is missing or corrupt.\nWould you like to initialize the directory? Click Cancel to exit YAMCL.", QtGui.QMessageBox.Yes | QtGui.QMessageBox.Cancel)
             if clicked_button == QtGui.QMessageBox.Yes:
                 main_launcher.create_skeleton_structure()
             else:
-                splash_screen.close()
-                sys.exit(app.exec_())
+                break
     splash_screen.close()
-
-    main_gui = graphical_interface.MainGUI.MainGUI(main_launcher)
-    main_gui.show()
-    sys.exit(app.exec_())
+    if startup_status == "SUCCESS":
+        main_gui = graphical_interface.MainGUI.MainGUI(main_launcher)
+        main_gui.show()
+        sys.exit(app.exec_())
+    else:
+        sys.exit()

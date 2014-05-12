@@ -22,59 +22,70 @@ import platform
 import sys
 import errno
 
-from yamcl.globals import DataPath
+class JSONTools:
+    @staticmethod
+    def read_json(raw_data):
+        return json.JSONDecoder().decode(raw_data)
+
+    @staticmethod
+    def create_json(json_obj):
+        return json.JSONEncoder(indent=2).encode(json_obj)
 
 class FileTools:
-    def __init__(self):
-        # Constants
-        self.TEXT_ENCODING = "UTF-8"
+    TEXT_ENCODING = "UTF-8"
 
     # General methods
 
-    def write_string(self, file_path, file_string):
+    @staticmethod
+    def write_string(file_path, file_string):
         '''
         Writes file in path 'file_path' with string 'file_string'. Will create directories as necessary
         '''
-        self.add_missing_dirs(file_path)
+        FileTools.add_missing_dirs(file_path)
         with open(file_path, mode="w") as tmp_file_obj:
             tmp_file_obj.write(file_string)
 
-    def write_object(self, file_path, file_object):
+    @staticmethod
+    def write_object(file_path, file_object):
         '''
         Writes file in path 'file_path' with file object 'file_object'. Will create directories as necessary
         '''
-        self.add_missing_dirs(file_path)
+        FileTools.add_missing_dirs(file_path)
         with open(file_path, mode="wb") as out_file:
             shutil.copyfileobj(file_object, out_file)
         file_object.close()
 
     # JSON methods
 
-    def read_json(self, json_path):
+    @staticmethod
+    def read_json(json_path):
         '''
         Returns a JSON object from file path 'json_path'
         '''
-        with open(json_path, encoding=self.TEXT_ENCODING) as tmp_file_obj:
+        with open(json_path, encoding=FileTools.TEXT_ENCODING) as tmp_file_obj:
             raw_data = tmp_file_obj.read()
-        return json.JSONDecoder().decode(raw_data)
+        return JSONTools.read_json(raw_data)
 
-    def write_json(self, json_path, json_obj):
+    @staticmethod
+    def write_json(json_path, json_obj):
         '''
         Writes JSON object 'json_obj' to path 'json_path'
         '''
-        self.add_missing_dirs(json_path)
+        FileTools.add_missing_dirs(json_path)
         with open(json_path, mode="wb") as tmp_file_obj:
-            tmp_file_obj.write(json.JSONEncoder(indent=2).encode(json_obj).encode(self.TEXT_ENCODING))
+            tmp_file_obj.write(JSONTools.create_json(json_obj).encode(FileTools.TEXT_ENCODING))
 
     # jar file methods
 
-    def get_jar_object(self, jar_path):
+    @staticmethod
+    def get_jar_object(jar_path):
         '''
         Creates a jar object from jar file on path 'jar_path'
         '''
         return zipfile.ZipFile(jar_path)
 
-    def extract_jar_files(self, jar_object, destination_dir, exclude_list=list()):
+    @staticmethod
+    def extract_jar_files(jar_object, destination_dir, exclude_list=list()):
         '''
         Extracts files from jar_object 'jar_object' to directory 'destination_dir', excluding files in 'exclude_list'
         '''
@@ -90,26 +101,26 @@ class FileTools:
 
     # Other methods
 
-    def get_root_data_path(self):
-        return DataPath(list())
-
-    def add_missing_dirs(self, file_path):
+    @staticmethod
+    def add_missing_dirs(file_path):
         '''
         Recursively adds the directories that are missing on file path 'file_path'
         '''
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-    def copy(self, source_path, destination_path):
+    @staticmethod
+    def copy(source_path, destination_path):
         '''
         Copies file 'source_path' into directory or file 'destination_path'
         '''
-        self.add_missing_dirs(destination_path)
+        FileTools.add_missing_dirs(destination_path)
         if os.path.isdir(source_path):
             shutil.copytree(source_path, destination_path)
         else:
             shutil.copy(source_path, destination_path)
 
-    def delete_and_clean(self, path):
+    @staticmethod
+    def delete_and_clean(path):
         '''
         Deletes path 'path' (will recursively delete directory)
         Directories that have become empty will be removed starting from the file's directory.
@@ -124,7 +135,8 @@ class FileTools:
             if not current_exception.errno == errno.ENOTEMPTY:
                 raise current_exception
 
-    def create_valid_name(self, name):
+    @staticmethod
+    def create_valid_name(name):
         '''
         Creates a filesystem-friendly name
         '''
@@ -136,19 +148,22 @@ class FileTools:
                 new_name += "_"
         return new_name
 
-    def get_file_name(self, path):
+    @staticmethod
+    def get_file_name(path):
         '''
         Wrapper around os.path.basename
         '''
         return os.path.basename(path)
 
-    def rename(self, src, dst):
+    @staticmethod
+    def rename(src, dst):
         '''
         Wrapper around os.rename
         '''
         os.rename(src, dst)
 
-    def move(self, src, dst):
+    @staticmethod
+    def move(src, dst):
         '''
         Wrapper around shutil.move
         '''

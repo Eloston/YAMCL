@@ -262,7 +262,7 @@ class MainGUI(QtGui.QMainWindow):
         Opens the YAMCL profile directory in the system's file explorer
         '''
         current_platform = self.Launcher.PlatformTools.get_os_family()
-        yamcl_data_path = str(self.Launcher.FileTools.get_root_data_path())
+        yamcl_data_path = str(self.Launcher.ROOT_PATH)
         if current_platform == "windows":
             os.startfile(yamcl_data_path)
 

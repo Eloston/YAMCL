@@ -16,21 +16,21 @@ along with YAMCL.  If not, see {http://www.gnu.org/licenses/}.
 import subprocess
 import os
 
-from yamcl.globals import DataPath
+from yamcl.tools import FileTools
 
 class ProfileManager:
     def __init__(self, launcher_obj):
         self.Launcher = launcher_obj
-        self.BASE_PATH = DataPath("profile")
+        self.BASE_PATH = self.Launcher.ROOT_PATH.joinpath("profile")
 
-        self.index = self.Launcher.FileTools.read_json(str(self.BASE_PATH + DataPath("index.json")))
+        self.index = FileTools.read_json(str(self.BASE_PATH.joinpath("index.json")))
         self.profile_instances = dict()
 
-    def flush_index(self):
+    def _flush_index(self):
         '''
         Writes current profile index in memory to the YAMCL data directory
         '''
-        self.Launcher.FileTools.write_json(str(self.BASE_PATH + DataPath("index.json")), self.index)
+        FileTools.write_json(str(self.BASE_PATH.joinpath("index.json")), self.index)
 
     def get_profile_list(self):
         '''
@@ -44,14 +44,14 @@ class ProfileManager:
         '''
         if not profile_name in self.index:
             self.index[profile_name] = dict()
-            self.index[profile_name]["directory"] = [self.Launcher.FileTools.create_valid_name(profile_name)]
+            self.index[profile_name]["directory"] = [FileTools.create_valid_name(profile_name)]
             profile_metadata = dict()
             profile_metadata["notes"] = str()
             profile_metadata["lastversion"] = dict()
             profile_metadata["lastversion"]["id"] = ""
             profile_metadata["lastversion"]["type"] = ""
-            self.Launcher.FileTools.write_json(str(self.BASE_PATH + DataPath(profile_name + "/yamcl_metadata.json")), profile_metadata)
-            self.flush_index()
+            FileTools.write_json(str(self.BASE_PATH.joinpath(profile_name + "/yamcl_metadata.json")), profile_metadata)
+            self._flush_index()
 
     def delete(self, profile_name):
         '''
@@ -59,9 +59,9 @@ class ProfileManager:
         '''
         if not profile_name in self.index:
             raise Exception("Profile " + str(profile_name) + " does not exist") # TODO: More appropriate exception
-        self.Launcher.FileTools.delete_and_clean(str(self.BASE_PATH + DataPath(self.index[profile_name]["directory"])))
+        FileTools.delete_and_clean(str(self.BASE_PATH.joinpath(*self.index[profile_name]["directory"])))
         del self.index[profile_name]
-        self.flush_index()
+        self._flush_index()
 
     def rename(self, current_profile_name, new_profile_name):
         '''
@@ -71,11 +71,11 @@ class ProfileManager:
             raise Exception("Cannot rename: " + current_profile_name + " does not exist")
         if new_profile_name in self.index:
             raise Exception("Cannot rename: " + new_profile_name + " already exists")
-        self.Launcher.FileTools.rename(str(self.BASE_PATH + DataPath(self.index[current_profile_name]["directory"])), str(self.BASE_PATH + DataPath(self.Launcher.FileTools.create_valid_name(new_profile_name))))
+        FileTools.rename(str(self.BASE_PATH.joinpath(*self.index[current_profile_name]["directory"])), str(self.BASE_PATH.joinpath(FileTools.create_valid_name(new_profile_name))))
         del self.index[current_profile_name]
         self.index[new_profile_name] = dict()
-        self.index[new_profile_name]["directory"] = [self.Launcher.FileTools.create_valid_name(new_profile_name)]
-        self.flush_index()
+        self.index[new_profile_name]["directory"] = [FileTools.create_valid_name(new_profile_name)]
+        self._flush_index()
 
     def get_profile_instance(self, profile_name):
         '''
@@ -86,7 +86,7 @@ class ProfileManager:
         if profile_name in self.profile_instances:
             return self.profile_instances[profile_name]
         else:
-            profile_directory = self.BASE_PATH + DataPath(self.index[profile_name]["directory"])
+            profile_directory = self.BASE_PATH.joinpath(*self.index[profile_name]["directory"])
             new_profile_instance = ProfileInstance(self.Launcher, profile_name, profile_directory)
             self.profile_instances[profile_name] = new_profile_instance
             return new_profile_instance
@@ -111,14 +111,14 @@ class ProfileInstance:
 
         self.profile_name = name
         self.data_path = profile_path
-        self.metadata = self.Launcher.FileTools.read_json(str(self.data_path + DataPath("yamcl_metadata.json")))
+        self.metadata = FileTools.read_json(str(self.data_path.joinpath("yamcl_metadata.json")))
         self.game_process = None
 
     def flush_metadata(self):
         '''
         Writes current library index in memory to the YAMCL data directory
         '''
-        self.Launcher.FileTools.write_json(str(self.data_path + DataPath("yamcl_metadata.json")), self.metadata)
+        FileTools.write_json(str(self.data_path.joinpath("yamcl_metadata.json")), self.metadata)
 
     def get_name(self):
         '''
@@ -171,7 +171,7 @@ class ProfileInstance:
         game_arguments["profile_name"] = self.profile_name
         game_arguments["version_name"] = game_binary_parser.get_id()
         game_arguments["game_directory"] = str(self.data_path)
-        game_arguments["game_assets"] = self.Launcher.AssetsManager.get_paths(game_binary_parser.get_assets_id())["directory"]
+        game_arguments["game_assets"] = str(self.Launcher.AssetsManager.get_paths(game_binary_parser.get_assets_id())["directory"])
         game_arguments["assets_root"] = str(self.Launcher.AssetsManager.BASE_PATH)
         game_arguments["assets_index_name"] = game_binary_parser.get_assets_id()
 

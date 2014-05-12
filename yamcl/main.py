@@ -16,20 +16,19 @@ along with YAMCL.  If not, see {http://www.gnu.org/licenses/}.
 import sys
 import shutil
 import platform
+import os.path
+import pathlib
 
 import yamcl.tools
 import yamcl.binaries
 import yamcl.libraries
 import yamcl.managers
 import yamcl.profiles
-from yamcl.globals import DataPath
 
 class Launcher:
     def __init__(self):
         self.COMPATIBLE_VERSION = 14
         self.PLATFORM_LIST = ["linux", "windows", "osx"]
-
-        self.FileTools = yamcl.tools.FileTools()
 
     def startup(self, data_path=str(), java_command=str()):
         '''
@@ -37,7 +36,11 @@ class Launcher:
         -"data_path" has path to YAMCL_data. If blank, set path to the current directory of this program.
         -Will setup YAMCL_data if necessary
         '''
-        DataPath.set_data_path(data_path)
+        if len(data_path) == 0:
+            self.ROOT_PATH = pathlib.Path(os.path.expanduser("~"), ".yamcl")
+        else:
+            self.ROOT_PATH = pathlib.Path(data_path)
+
         if (self.check_data_integrity()):
             self.PlatformTools = yamcl.tools.PlatformTools(java_command)
 
@@ -56,18 +59,18 @@ class Launcher:
         '''
         Creates the skeleton structure for YAMCL data
         '''
-        self.FileTools.write_json(str(DataPath("lib/index.json")), dict())
-        self.FileTools.write_json(str(DataPath("bin/index.json")), list())
-        self.FileTools.write_json(str(DataPath("profile/index.json")), dict())
+        yamcl.tools.FileTools.write_json(str(self.ROOT_PATH.joinpath("lib/index.json")), dict())
+        yamcl.tools.FileTools.write_json(str(self.ROOT_PAtH.joinpath("bin/index.json")), list())
+        yamcl.tools.FileTools.write_json(str(self.ROOT_PAtH.joinpath("profile/index.json")), dict())
 
     def check_data_integrity(self):
         '''
         Returns True if the current YAMCL data structural integrity is holding, False otherwise
         '''
         try:
-            if (self.FileTools.get_root_data_path().is_directory()):
-                if (DataPath("lib").is_directory() and DataPath("bin").is_directory() and DataPath("profile").is_directory()):
-                    if (not DataPath("lib/index.json").is_directory() and not DataPath("bin/index.json").is_directory() and not DataPath("profile/index.json").is_directory()):
+            if (self.ROOT_PATH.is_dir()):
+                if self.ROOT_PATH.joinpath("lib").is_dir() and self.ROOT_PATH.joinpath("bin").is_dir() and self.ROOT_PATH.joinpath("profile").is_dir():
+                    if not self.ROOT_PATH.joinpath("lib", "index.json").is_dir() and not self.ROOT_PATH.joinpath("bin", "index.json").is_dir() and not self.ROOT_PATH.joinpath("profile", "index.json").is_dir():
                         return True
         except FileNotFoundError:
             pass

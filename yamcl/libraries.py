@@ -15,20 +15,22 @@ along with YAMCL.  If not, see {http://www.gnu.org/licenses/}.
 
 import copy
 import hashlib
+import pathlib
 
-from yamcl.globals import DataPath, URL
+from yamcl.globals import URL
+from yamcl.tools import FileTools
 
 class LibraryManager:
     def __init__(self, launcher_obj):
         self.Launcher = launcher_obj
         self.download_exclusive = True
-        self.BASE_PATH = DataPath("lib")
+        self.BASE_PATH = self.Launcher.ROOT_PATH.joinpath("lib")
 
-        self.index_path = str(self.BASE_PATH + DataPath("index.json"))
-        self.index = self.Launcher.FileTools.read_json(self.index_path)
+        self.index_path = str(self.BASE_PATH.joinpath("index.json"))
+        self.index = FileTools.read_json(self.index_path)
 
-    def flush_index(self):
-        self.Launcher.FileTools.write_json(self.index_path, self.index)
+    def _flush_index(self):
+        FileTools.write_json(self.index_path, self.index)
 
     def is_download_exclusive(self):
         return self.download_exclusive
@@ -40,11 +42,11 @@ class LibraryManager:
         return library_parser.get_id() in self.index
 
     def is_natives_existant(self, library_parser, natives_extension):
-        natives_directory = self.BASE_PATH + DataPath(self.index[library_parser.get_id()]["path"]) + DataPath(natives_extension)
+        natives_directory = self.BASE_PATH.joinpath(*self.index[library_parser.get_id()]["path"]).joinpath(natives_extension)
         return natives_directory.exists()
 
     def get_library_path(self, library_id):
-        return DataPath(self.index[library_id]["path"])
+        return pathlib.Path(*self.index[library_id]["path"])
 
     def _download_library(self, library_parser):
         if self.download_exclusive and not library_parser.current_system_supported():
@@ -73,15 +75,15 @@ class LibraryManager:
             current_tries = 1
             while current_tries <= 3:
                 correct_hash = current_library["hash"].url_object().read().decode("UTF-8")
-                self.Launcher.FileTools.write_object(str(self.BASE_PATH + current_library["path"]), current_library["url"].url_object())
+                FileTools.write_object(str(self.BASE_PATH.joinpath(current_library["path"])), current_library["url"].url_object())
                 hasher = hashlib.sha1()
-                hasher.update(open(str(self.BASE_PATH + current_library["path"]), mode="rb").read())
+                hasher.update(open(str(self.BASE_PATH.joinpath(current_library["path"])), mode="rb").read())
                 if hasher.hexdigest() == correct_hash:
                     if library_parser.is_natives():
-                        natives_directory = self.BASE_PATH + current_library["path"].directory_path() + DataPath(current_library["natives_extension"])
-                        jar_path = str(self.BASE_PATH + current_library["path"])
-                        self.Launcher.FileTools.extract_jar_files(self.Launcher.FileTools.get_jar_object(jar_path), str(natives_directory), library_parser.get_natives_exclude())
-                        self.Launcher.FileTools.delete_and_clean(jar_path)
+                        natives_directory = self.BASE_PATH.joinpath(current_library["path"].parent.joinpath(current_library["natives_extension"]))
+                        jar_path = str(self.BASE_PATH.joinpath(current_library["path"]))
+                        FileTools.extract_jar_files(FileTools.get_jar_object(jar_path), str(natives_directory), library_parser.get_natives_exclude())
+                        FileTools.delete_and_clean(jar_path)
                     break
                 else:
                     current_tries += 1
@@ -89,9 +91,9 @@ class LibraryManager:
                 raise Exception("Failed to download library " + library_parser.get_id()) # TODO: More appropriate exception
         self.index[library_parser.get_id()] = dict()
         if library_parser.is_natives():
-            self.index[library_parser.get_id()]["path"] = download_list[0]["path"].directory_path().get_relative_path()
+            self.index[library_parser.get_id()]["path"] = download_list[0]["path"].parent.parts
         else:
-            self.index[library_parser.get_id()]["path"] = download_list[0]["path"].get_relative_path()
+            self.index[library_parser.get_id()]["path"] = download_list[0]["path"].parts
 
     def download_missing(self, library_parser_list, progress_function=None):
         if not (progress_function == None):
@@ -102,7 +104,7 @@ class LibraryManager:
             if not (progress_function == None):
                 downloaded_count += 1
                 progress_function("Downloading libraries", downloaded_count/len(library_parser_list))
-        self.flush_index()
+        self._flush_index()
 
     def get_platform_paths(self, library_parser_list):
         libraries_dict = dict()
@@ -112,12 +114,12 @@ class LibraryManager:
             if current_parser.current_system_supported():
                 if not self.is_library_existant(current_parser):
                     raise Exception("Library", current_parser.get_id(), "does not exist") # TODO: More appropriate exception
-                base_path = self.BASE_PATH + self.get_library_path(current_parser.get_id())
+                base_path = self.BASE_PATH.joinpath(self.get_library_path(current_parser.get_id()))
                 if current_parser.is_natives():
                     current_extension = current_parser.get_current_system_natives_extension()
                     if not self.is_natives_existant(current_parser, current_extension):
                         raise Exception("Natives", current_extension, "for library", current_parser.get_id(), "does not exist") # TODO: More appropriate exception
-                    libraries_dict["natives"].append(str(base_path + DataPath(current_extension)))
+                    libraries_dict["natives"].append(str(base_path.joinpath(current_extension)))
                 else:
                     libraries_dict["jars"].append(str(base_path))
         return libraries_dict
@@ -131,25 +133,25 @@ class LibraryManager:
         '''
         if library_id in self.index:
             raise Exception("Library already exists") # TODO: More appropriate exception
-        final_path = DataPath(destination_path)
+        final_path = pathlib.Path(destination_path)
         if is_natives:
             for current_source in source_paths:
                 try:
-                    self.Launcher.FileTools.copy(current_source, str(final_path + DataPath(self.Launcher.FileTools.get_file_name(current_source))))
+                    FileTools.copy(current_source, str(final_path.joinpath(FileTools.get_file_name(current_source))))
                 except FileExistsError:
                     pass
         else:
-            self.Launcher.FileTools.copy(source_paths[0], str(final_path))
+            FileTools.copy(source_paths[0], str(final_path))
         self.index[library_id] = dict()
-        self.index[library_id]["path"] = (final_path - self.BASE_PATH).get_relative_path()
-        self.flush_index()
+        self.index[library_id]["path"] = list(final_path.relative_to(self.BASE_PATH).parts)
+        self._flush_index()
 
     def delete(self, library_id):
         if not library_id in self.index:
             raise Exception("Library is not existant") # TODO: More appropriate exception
-        self.Launcher.FileTools.delete_and_clean(str(self.BASE_PATH + self.get_library_path(library_id)))
+        FileTools.delete_and_clean(str(self.BASE_PATH.joinpath(self.get_library_path(library_id))))
         del self.index[library_id]
-        self.flush_index()
+        self._flush_index()
 
     def rename(self, current_library_id, new_library_id):
         if not current_library_id in self.index:
@@ -158,7 +160,18 @@ class LibraryManager:
             raise Exception("Cannot rename library: " + new_library_id + " already exists")
         self.index[new_library_id] = self.index[current_library_id]
         del self.index[current_library_id]
-        self.flush_index()
+        self._flush_index()
+
+    def get_unused_libraries(self, binary_parser_list):
+        '''
+        Returns a list of libraries not used in binary parsers 'binary_parser_list'
+        '''
+        unused_library_ids = list()
+        for binary_parser in binary_parser_list:
+            for library_parser in binary_parser.get_library_parsers():
+                if not (library_parser.get_id() in self.index) and not (library_parser.get_id() in unused_library_ids):
+                    unused_library_ids.append(library_parser.get_id())
+        return unused_library_ids
 
 class LibraryParser:
     def __init__(self, launcher_obj, binary_dict):
@@ -249,7 +262,7 @@ class LibraryParser:
             {
                 "url": URL(), # The JAR file
                 "hash": URL(), # The SHA-1 sum file for the JAR
-                "path": DataPath() # The relative path
+                "path": Path() # The relative path
             },
             ...
         ]
@@ -266,7 +279,7 @@ class LibraryParser:
             info_dict = dict()
             info_dict["natives_extension"] = current_extension
             info_dict["url"] = URL(relative_path, URL.LIBRARIES)
-            info_dict["path"] = DataPath(relative_path)
+            info_dict["path"] = pathlib.Path(*relative_path)
             hash_path = copy.copy(relative_path)
             hash_path[-1] += ".sha1"
             info_dict["hash"] = URL(hash_path, URL.LIBRARIES)
