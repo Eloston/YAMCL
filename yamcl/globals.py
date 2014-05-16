@@ -21,8 +21,9 @@ class URL:
     DOWNLOAD = protocol + "s3.amazonaws.com/Minecraft.Download/"
     RESOURCES = protocol + "resources.download.minecraft.net/"
     LIBRARIES = protocol + "libraries.minecraft.net/" # Requires HTTPS protocol
+    AUTH = protocol + "authserver.mojang.com/"
 
-    def __init__(self, new_path, url_type=None):
+    def __init__(self, new_path, url_type=""):
         '''
         The path must be a relative path
         url_type is one of the URL prefixes defined in this class

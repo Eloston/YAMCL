@@ -175,13 +175,13 @@ class ProfileInstance:
         game_arguments["assets_root"] = str(self.Launcher.AssetsManager.BASE_PATH)
         game_arguments["assets_index_name"] = game_binary_parser.get_assets_id()
 
-        game_arguments["auth_username"] = self.Launcher.AccountManager.get_game_username()
-        game_arguments["auth_player_name"] = self.Launcher.AccountManager.get_account_username()
-        game_arguments["auth_uuid"] = self.Launcher.AccountManager.get_uuid()
-        game_arguments["auth_session"] = self.Launcher.AccountManager.get_session()
-        game_arguments["auth_access_token"] = self.Launcher.AccountManager.get_access_token()
-        game_arguments["user_type"] = self.Launcher.AccountManager.get_user_type()
-        game_arguments["user_properties"] = self.Launcher.AccountManager.get_user_properties()
+        game_arguments["auth_username"] = self.Launcher.AccountManager.get_account().get_game_username()
+        game_arguments["auth_player_name"] = self.Launcher.AccountManager.get_account().get_account_username()
+        game_arguments["auth_uuid"] = self.Launcher.AccountManager.get_account().get_uuid()
+        game_arguments["auth_session"] = self.Launcher.AccountManager.get_account().get_session()
+        game_arguments["auth_access_token"] = self.Launcher.AccountManager.get_account().get_access_token()
+        game_arguments["user_type"] = self.Launcher.AccountManager.get_account().get_user_type()
+        game_arguments["user_properties"] = self.Launcher.AccountManager.get_account().get_user_properties()
 
         version_paths = self.Launcher.BinaryManager.get_paths(version_id, version_type)
 

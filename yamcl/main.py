@@ -24,6 +24,7 @@ import yamcl.binaries
 import yamcl.libraries
 import yamcl.managers
 import yamcl.profiles
+import yamcl.accounts
 
 class Launcher:
     def __init__(self):
@@ -48,7 +49,7 @@ class Launcher:
             self.LibraryManager = yamcl.libraries.LibraryManager(self)
             self.ProfileManager = yamcl.profiles.ProfileManager(self)
             self.AssetsManager = yamcl.managers.AssetsManager(self)
-            self.AccountManager = yamcl.managers.AccountManager()
+            self.AccountManager = yamcl.accounts.AccountManager()
             self.VersionsListManager = yamcl.managers.VersionsListManager(self)
 
             return "SUCCESS"
