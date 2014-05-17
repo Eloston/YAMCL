@@ -186,18 +186,29 @@ class PlatformTools:
             if current_platform == "windows":
                 import winreg
                 JAVA_REGISTRY_PATH = "Software\\JavaSoft\\Java Runtime Environment"
-                current_java_version = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, JAVA_REGISTRY_PATH), "CurrentVersion")[0]
-                java_binary_path = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, JAVA_REGISTRY_PATH + "\\" + current_java_version), "JavaHome")[0]
+                current_java_version = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, JAVA_REGISTRY_PATH, access=winreg.KEY_READ | winreg.KEY_WOW64_64KEY), "CurrentVersion")[0]
+                java_binary_path = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, JAVA_REGISTRY_PATH + "\\" + current_java_version, access=winreg.KEY_READ | winreg.KEY_WOW64_64KEY), "JavaHome")[0]
                 java_command = java_binary_path + "\\bin\\java.exe"
             else:
                 java_command = "java"
         self.java_path = shutil.which(os.path.expanduser(os.path.expandvars(java_command)))
         # self.java_path will be none if file is not executable
+        self.os_info["arch"] = None
         if not self.java_path == None:
             self.java_path = os.path.abspath(self.java_path)
+            # Everything in this 'if' statement is an ugly Windows hack
+            if current_platform == "windows":
+                import subprocess
+                arg_arch_check = dict()
+                arg_arch_check["-d32"] = "32"
+                arg_arch_check["-d64"] = "64"
+                for current_argument in arg_arch_check.keys():
+                    if not "Error: This Java instance does not support a " in subprocess.Popen(["java", current_argument], stderr=subprocess.PIPE).communicate()[1].decode("UTF-8").splitlines()[0]:
+                        self.os_info["arch"] = arg_arch_check[current_argument]
 
         self.os_info["family"] = current_platform
-        self.os_info["arch"] = platform.architecture(self.java_path)[0][:2]
+        if self.os_info["arch"] == None: # On Windows, this statement will be True if the hack fails
+            self.os_info["arch"] = platform.architecture(self.java_path)[0][:2]
 
     def get_java_path(self):
         '''

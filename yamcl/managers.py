@@ -57,7 +57,7 @@ class AssetsManager:
             for asset in asset_list.values():
                 asset_relative_path = [asset["hash"][:2], asset["hash"]]
                 asset_url = URL(asset_relative_path, URL.RESOURCES)
-                asset_path = self.BASE_PATH.joinpath(["objects"] + asset_relative_path)
+                asset_path = self.BASE_PATH.joinpath(*(["objects"] + asset_relative_path))
                 if not asset_path.exists():
                     asset_dict[asset_url] = str(asset_path)
 

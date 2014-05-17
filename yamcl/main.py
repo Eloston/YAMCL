@@ -61,8 +61,8 @@ class Launcher:
         Creates the skeleton structure for YAMCL data
         '''
         yamcl.tools.FileTools.write_json(str(self.ROOT_PATH.joinpath("lib/index.json")), dict())
-        yamcl.tools.FileTools.write_json(str(self.ROOT_PAtH.joinpath("bin/index.json")), list())
-        yamcl.tools.FileTools.write_json(str(self.ROOT_PAtH.joinpath("profile/index.json")), dict())
+        yamcl.tools.FileTools.write_json(str(self.ROOT_PATH.joinpath("bin/index.json")), list())
+        yamcl.tools.FileTools.write_json(str(self.ROOT_PATH.joinpath("profile/index.json")), dict())
 
     def check_data_integrity(self):
         '''

@@ -39,7 +39,7 @@ class AccountTab(QtGui.QWidget):
         # Offline Settings
 
         self.offline_username = QtGui.QLineEdit()
-        self.offline_username.setText(self.Launcher.AccountManager.get_game_username())
+        self.offline_username.setText(self.Launcher.AccountManager.get_account().get_game_username())
         set_username_button = QtGui.QPushButton("Set Username")
         set_username_button.clicked.connect(self._set_offline_username)
 
