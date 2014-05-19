@@ -59,6 +59,14 @@ class OnlineAccount(GeneralAccount):
         super(OnlineAccount, self).__init__()
         self.password = None
 
+    def _communicate(self, endpoint, payload):
+        '''
+        Endpoint is a string path
+        Payload is a JSON object
+        '''
+        # NOTE: https://docs.python.org/3.4/howto/urllib2.html
+        pass
+
     def authenticate(self, username, pw):
         pass
     def refresh():
