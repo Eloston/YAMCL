@@ -35,11 +35,11 @@ class URL:
         elif isinstance(new_path, str):
             self._relative_path = new_path.split("/")
 
-    def url_object(self):
+    def url_object(self, data=None, headers=dict()):
         '''
         Returns a URL object
         '''
-        return urllib.request.urlopen(self.__str__())
+        return urllib.request.urlopen(urllib.request.Request(self.__str__(), data, headers))
 
     def __str__(self):
         '''

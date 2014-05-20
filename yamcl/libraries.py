@@ -238,7 +238,7 @@ class LibraryParser:
         current_family = self.Launcher.PlatformTools.get_os_family()
         current_natives_extension = self.library_info["natives"][current_family]
         if self.ARCH_KEY in current_natives_extension:
-            current_natives_extension = current_natives_extension.replace(self.ARCH_KEY, self.Launcher.PlatformTools.get_os_arch())
+            current_natives_extension = current_natives_extension.replace(self.ARCH_KEY, self.Launcher.PlatformTools.get_java_arch())
         return current_natives_extension
 
     def get_all_natives_extensions(self):

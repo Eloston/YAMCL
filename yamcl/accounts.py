@@ -13,6 +13,8 @@ You should have received a copy of the GNU General Public License
 along with YAMCL.  If not, see {http://www.gnu.org/licenses/}.
 '''
 
+import urllib.error
+
 from yamcl.globals import URL
 from yamcl.tools import JSONTools
 
@@ -55,6 +57,7 @@ class OfflineAccount(GeneralAccount):
         self.game_username = new_username
 
 class OnlineAccount(GeneralAccount):
+    TEXT_ENCODING = "UTF-8"
     def __init__(self):
         super(OnlineAccount, self).__init__()
         self.password = None
@@ -65,7 +68,20 @@ class OnlineAccount(GeneralAccount):
         Payload is a JSON object
         '''
         # NOTE: https://docs.python.org/3.4/howto/urllib2.html
-        pass
+        # TODO: Generate random 32 character clientToken?
+        headers = dict()
+        headers["Content-Type"] = "application/json"
+        headers["User-Agent"] = "YAMCL"
+        url_obj = URL(endpoint, URL.AUTH)
+        print(str(url_obj))
+        try:
+            url_request = url_obj.url_object(JSONTools.serialize_json(payload).encode(OnlineAccount.TEXT_ENCODING), headers)
+            print("Status: " + str(url_request.status))
+            print("Reason: " + str(url_request.reason))
+            print("Data: " + url_request.read().decode(OnlineAccount.TEXT_ENCODING))
+        except urllib.error.HTTPError as http_error:
+            print(http_error.code)
+            print(http_error.read())
 
     def authenticate(self, username, pw):
         pass

@@ -31,6 +31,10 @@ class JSONTools:
     def create_json(json_obj):
         return json.JSONEncoder(indent=2).encode(json_obj)
 
+    @staticmethod
+    def serialize_json(json_obj):
+        return json.dumps(json_obj)
+
 class FileTools:
     TEXT_ENCODING = "UTF-8"
 
@@ -203,7 +207,7 @@ class PlatformTools:
                 arg_arch_check["-d32"] = "32"
                 arg_arch_check["-d64"] = "64"
                 for current_argument in arg_arch_check.keys():
-                    if not "Error: This Java instance does not support a " in subprocess.Popen(["java", current_argument], stderr=subprocess.PIPE).communicate()[1].decode("UTF-8").splitlines()[0]:
+                    if not "Error: This Java instance does not support a " in subprocess.Popen([self.java_path, current_argument], stderr=subprocess.PIPE).communicate()[1].decode("UTF-8").splitlines()[0]:
                         self.os_info["arch"] = arg_arch_check[current_argument]
 
         self.os_info["family"] = current_platform
@@ -222,9 +226,8 @@ class PlatformTools:
         '''
         return self.os_info["family"]
 
-    def get_os_arch(self):
+    def get_java_arch(self):
         '''
-        Returns the architecture the OS is built for. "32" for 32-bit and "64" for 64-bit
-        Uses the Java binary for determining the architecture
+        Returns the Java architecture. "32" for 32-bit and "64" for 64-bit
         '''
         return self.os_info["arch"]
