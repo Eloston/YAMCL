@@ -14,6 +14,7 @@ along with YAMCL.  If not, see {http://www.gnu.org/licenses/}.
 '''
 
 import urllib.error
+import uuid
 
 from yamcl.globals import URL
 from yamcl.tools import JSONTools
@@ -61,6 +62,7 @@ class OnlineAccount(GeneralAccount):
     def __init__(self):
         super(OnlineAccount, self).__init__()
         self.password = None
+        self.client_token = uuid.uuid4().hex
 
     def _communicate(self, endpoint, payload):
         '''
@@ -73,18 +75,37 @@ class OnlineAccount(GeneralAccount):
         headers["Content-Type"] = "application/json"
         headers["User-Agent"] = "YAMCL"
         url_obj = URL(endpoint, URL.AUTH)
-        print(str(url_obj))
+        server_data = list()
         try:
             url_request = url_obj.url_object(JSONTools.serialize_json(payload).encode(OnlineAccount.TEXT_ENCODING), headers)
-            print("Status: " + str(url_request.status))
-            print("Reason: " + str(url_request.reason))
-            print("Data: " + url_request.read().decode(OnlineAccount.TEXT_ENCODING))
+            server_data[0] = True
+            try:
+                server_data[1] = JSONTools.read_json(url_request.read().decode(OnlineAccount.TEXT_ENCODING))
+            except ValueError:
+                server_data[1] = None
         except urllib.error.HTTPError as http_error:
-            print(http_error.code)
-            print(http_error.read())
+            server_data[0] = False
+            try:
+                server_data[1] = JSONTools.read_json(http_error.read().decode(OnlineAccount.TEXT_ENCODING))
+            except ValueError:
+                server_data[1] = None
+        return server_data
 
     def authenticate(self, username, pw):
-        pass
+        post_payload = dict()
+        post_payload["agent"] = {"name": "Minecraft", "version": 1}
+        post_payload["username"] = username
+        post_payload["password"] = pw
+        post_payload["clientToken"] = self.client_token
+        success, server_data = self._communicate("authenticate", post_payload)
+        if success:
+            if not server_data["clientToken"] == self.client_token:
+                raise Exception("Client Tokens are not the same") # TODO: Change this
+            self.access_token = server_data["accessToken"]
+            self.user_type = "mojang"
+            if "legacy" in server_data["availableProfiles"]:
+                if server_data["availableProfiles"]["legacy"]:
+                    self.user_type = "legacy"
     def refresh():
         pass
     def validate():
