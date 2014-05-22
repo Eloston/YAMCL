@@ -24,7 +24,7 @@ class GeneralAccount:
         self.game_username = "Player"
         self.account_username = "Player"
         self.uuid = "00000000-0000-0000-0000-000000000000"
-        self.access_token = "0"
+        self.access_token = None
         self.user_type = "legacy"
         self.user_properties = str(dict())
         self.session_id = "-" # This is deprecated in the Yggdrasil authentication system
@@ -53,6 +53,7 @@ class GeneralAccount:
 class OfflineAccount(GeneralAccount):
     def __init__(self):
         super(OfflineAccount, self).__init__()
+        self.access_token = "0"
 
     def set_game_username(self, new_username):
         self.game_username = new_username
@@ -61,16 +62,17 @@ class OnlineAccount(GeneralAccount):
     TEXT_ENCODING = "UTF-8"
     def __init__(self):
         super(OnlineAccount, self).__init__()
-        self.password = None
         self.client_token = uuid.uuid4().hex
 
+    def set_account_username(self, username):
+        self.account_username = username
+        
     def _communicate(self, endpoint, payload):
         '''
         Endpoint is a string path
         Payload is a JSON object
         '''
         # NOTE: https://docs.python.org/3.4/howto/urllib2.html
-        # TODO: Generate random 32 character clientToken?
         headers = dict()
         headers["Content-Type"] = "application/json"
         headers["User-Agent"] = "YAMCL"
@@ -91,28 +93,74 @@ class OnlineAccount(GeneralAccount):
                 server_data[1] = None
         return server_data
 
-    def authenticate(self, username, pw):
+    def authenticate(self, pw):
+        '''
+        Gets an access token, uuid, and account type with a username and password
+        NOTE: access tokens do not seem to expire for a long time
+        '''
         post_payload = dict()
         post_payload["agent"] = {"name": "Minecraft", "version": 1}
-        post_payload["username"] = username
+        post_payload["username"] = self.account_username
         post_payload["password"] = pw
         post_payload["clientToken"] = self.client_token
         success, server_data = self._communicate("authenticate", post_payload)
+        status_data = [success, "", ""]
         if success:
-            if not server_data["clientToken"] == self.client_token:
-                raise Exception("Client Tokens are not the same") # TODO: Change this
-            self.access_token = server_data["accessToken"]
-            self.user_type = "mojang"
-            if "legacy" in server_data["availableProfiles"]:
-                if server_data["availableProfiles"]["legacy"]:
-                    self.user_type = "legacy"
-    def refresh():
-        pass
-    def validate():
-        pass
-    def signout():
-        pass
+            if server_data["clientToken"] == self.client_token:
+                self.access_token = server_data["accessToken"]
+                self.uuid = server_data["selectedProfile"]["id"]
+                self.user_type = "mojang"
+                if "legacy" in server_data["selectedProfile"]:
+                    if server_data["availableProfiles"]["legacy"]:
+                        self.user_type = "legacy"
+            else:
+                status_data[0] = False
+                status_data[1] = "Authentication Error"
+                status_data[2] = "Received client token does not match"
+        else:
+            status_data[1] = server_data["error"]
+            status_data[2] = server_data["errorMessage"]
+        return status_data
 
+    def refresh(self):
+        '''
+        Generates a new access token from an old access token. Invalidates the old access token
+        '''
+        if self.access_token == None:
+            raise Exception("There was no pre-existing access token")
+        post_payload = dict()
+        post_payload["accessToken"] = self.access_token
+        post_payload["clientToken"] = self.client_token
+        success, server_data = self._communicate("refresh", post_payload)
+        status_data = [success, "", ""]
+        if success:
+            if server_data["clientToken"] == self.client_token:
+                self.access_token = server_data["accessToken"]
+            else:
+                status_data[0] = False
+                status_data[1] = "Authentication Error"
+                status_data[2] = "Received client token does not match"
+        else:
+            status_data[1] = server_data["error"]
+            status_data[2] = server_data["errorMessage"]
+        return status_data
+    def validate(self):
+        '''
+        Returns true if the access token is valid, otherwise false
+        '''
+        pass
+    def invalidate(self):
+        '''
+        Invalidates the access token and ends the session, essentially logging out
+        This is equivalent to signout but without the need to store a password
+        '''
+        pass
+    def signout(self, pw):
+        '''
+        Invalidates the access token and ends the session, essentially logging out
+        This is equivalent to invalidate but using a password
+        '''
+        pass
 class AccountManager:
     def __init__(self):
         self.account_obj = OfflineAccount()
