@@ -92,37 +92,44 @@ class AccountTab(QtGui.QWidget):
 
     def _toggle_mode(self):
         if self.offline_radio.isChecked():
+            if self.Launcher.AccountManager.get_account().is_authenticated():
+                clicked_button = QtGui.QMessageBox.question(self, "YAMCL: Sign-out?", "You are currently signed-in. YAMCL must sign you out first before switching offline. Do you want to continue?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+                if clicked_button == QtGui.QMessageBox.Yes:
+                    self._signout()
+                else:
+                    self.online_radio.setChecked(True)
+                    return
+            self.Launcher.AccountManager.switch_offline()
             self.offline_settings_groupbox.setEnabled(True)
             self.online_settings_groupbox.setEnabled(False)
         elif self.online_radio.isChecked():
-            # TODO: Implement when authentication has been implemented
-            QtGui.QMessageBox.critical(self, "YAMCL: Account Error", "Online mode has not bee implemented yet.", QtGui.QMessageBox.Ok)
-            self.online_radio.setChecked(False)
-            self.offline_radio.setChecked(True)
-            #self.offline_settings_groupbox.setEnabled(False)
-            #self.online_settings_groupbox.setEnabled(True)
+            self.Launcher.AccountManager.switch_online()
+            self.offline_settings_groupbox.setEnabled(False)
+            self.online_settings_groupbox.setEnabled(True)
 
     def _set_offline_username(self):
-        print("Current Offline Username: " + self.offline_username.text())
-        self.Launcher.AccountManager.set_game_username(self.offline_username.text())
+        self.Launcher.AccountManager.get_account().set_game_username(self.offline_username.text())
 
     def _signin(self):
-        # TODO: Implement when authentication has been implemented
-        print("Username: " + self.online_username.text())
-        print("Password: " + self.online_password.text())
+        self.Launcher.AccountManager.get_account().set_account_username(self.online_username.text())
+        success, error_title, error_message = self.Launcher.AccountManager.get_account().authenticate(self.online_password.text())
         self.online_password.setText(str())
-        self.online_username.setEnabled(False)
-        self.online_password.setEnabled(False)
-        self.signin_button.setEnabled(False)
-        self.signout_button.setEnabled(True)
+        if success:
+            self.online_username.setEnabled(False)
+            self.online_password.setEnabled(False)
+            self.signin_button.setEnabled(False)
+            self.signout_button.setEnabled(True)
+        else:
+            QtGui.QMessageBox.critical(self, "Sign-in Error: " + error_title, error_message, QtGui.QMessageBox.Ok)
 
     def _signout(self):
-        # TODO: Implement when authentication has been implemented
-        print("Signing out")
+        success, error_title, error_message = self.Launcher.AccountManager.get_account().invalidate()
         self.online_username.setEnabled(True)
         self.online_password.setEnabled(True)
         self.signin_button.setEnabled(True)
         self.signout_button.setEnabled(False)
+        if not success:
+            QtGui.QMessageBox.critical(self, "Sign-out Error: " + error_title, error_message, QtGui.QMessageBox.Ok)
 
 class ProfilesTab(QtGui.QWidget):
     def __init__(self, launcher_obj, parent=None):
@@ -163,6 +170,9 @@ class ProfilesTab(QtGui.QWidget):
     def _open_profile_tab(self):
         unopened_profile_list = list()
         all_profiles = self.Launcher.ProfileManager.get_profile_list()
+        if len(all_profiles) == 0:
+            QtGui.QMessageBox.critical(self, "YAMCL: Open Profile Error", "You have not created any profiles.", QtGui.QMessageBox.Ok)
+            return
         for current_profile in all_profiles:
             if not current_profile in self.open_profile_instances:
                 unopened_profile_list.append(current_profile)

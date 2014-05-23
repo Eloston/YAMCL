@@ -63,21 +63,24 @@ class OnlineAccount(GeneralAccount):
     def __init__(self):
         super(OnlineAccount, self).__init__()
         self.client_token = uuid.uuid4().hex
+        self.signedin = False
 
     def set_account_username(self, username):
         self.account_username = username
-        
+
+    def is_authenticated(self):
+        return self.signedin
+
     def _communicate(self, endpoint, payload):
         '''
         Endpoint is a string path
         Payload is a JSON object
         '''
-        # NOTE: https://docs.python.org/3.4/howto/urllib2.html
         headers = dict()
         headers["Content-Type"] = "application/json"
         headers["User-Agent"] = "YAMCL"
         url_obj = URL(endpoint, URL.AUTH)
-        server_data = list()
+        server_data = [None, None]
         try:
             url_request = url_obj.url_object(JSONTools.serialize_json(payload).encode(OnlineAccount.TEXT_ENCODING), headers)
             server_data[0] = True
@@ -107,6 +110,7 @@ class OnlineAccount(GeneralAccount):
         status_data = [success, "", ""]
         if success:
             if server_data["clientToken"] == self.client_token:
+                self.signedin = True
                 self.access_token = server_data["accessToken"]
                 self.uuid = server_data["selectedProfile"]["id"]
                 self.user_type = "mojang"
@@ -144,23 +148,50 @@ class OnlineAccount(GeneralAccount):
             status_data[1] = server_data["error"]
             status_data[2] = server_data["errorMessage"]
         return status_data
+
     def validate(self):
         '''
-        Returns true if the access token is valid, otherwise false
+        Returns True if the access token is valid, otherwise False
         '''
-        pass
+        post_payload = dict()
+        post_payload["accessToken"] = self.access_token
+        success, server_data = self._communicate("validate", post_payload)
+        return success
+
     def invalidate(self):
         '''
         Invalidates the access token and ends the session, essentially logging out
         This is equivalent to signout but without the need to store a password
         '''
-        pass
+        post_payload = dict()
+        post_payload["accessToken"] = self.access_token
+        post_payload["clientToken"] = self.client_token
+        success, server_data = self._communicate("invalidate", post_payload)
+        status_data = [success, "", ""]
+        if not success:
+            status_data[1] = server_data["error"]
+            status_data[2] = server_data["errorMessage"]
+        self.signedin = False
+        self.access_token = None # Perhaps there is a situation where the access token is still valid but the invalidate function failed?
+        return status_data
+
     def signout(self, pw):
         '''
         Invalidates the access token and ends the session, essentially logging out
         This is equivalent to invalidate but using a password
         '''
-        pass
+        post_payload = dict()
+        post_payload["username"] = self.account_username
+        post_payload["password"] = pw
+        success, server_data = self._communicate("signout", post_payload)
+        status_data = [success, "", ""]
+        if not success:
+            status_data[1] = server_data["error"]
+            status_data[2] = server_data["errorMessage"]
+        self.signedin = False
+        self.access_token = None # Same issue as invalidate
+        return status_data
+
 class AccountManager:
     def __init__(self):
         self.account_obj = OfflineAccount()
@@ -183,4 +214,5 @@ class AccountManager:
 
     def shutdown(self):
         if not self.is_offline():
-            self.account_obj.signout()
+            if self.account_obj.is_authenticated():
+                self.account_obj.invalidate()
