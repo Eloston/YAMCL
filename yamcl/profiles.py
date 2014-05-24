@@ -126,6 +126,9 @@ class ProfileInstance:
         '''
         return self.profile_name
 
+    def get_path(self):
+        return self.data_path
+
     def get_last_version(self):
         '''
         Returns the last version launched
@@ -196,7 +199,12 @@ class ProfileInstance:
         launch_arguments.append(game_binary_parser.get_launch_class())
         launch_arguments.append(game_binary_parser.get_arguments(game_arguments))
         os.chdir(game_arguments["game_directory"]) # Needed for logs to be created in the proper directory
-        self.game_process = subprocess.Popen(" ".join(launch_arguments), shell=True)
+        self.game_process = subprocess.Popen(" ".join(launch_arguments), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+
+    def get_output_object(self):
+        if self.check_game_running():
+            return self.game_process.stdout
+        return None
 
     def kill_game(self):
         '''
@@ -204,3 +212,7 @@ class ProfileInstance:
         '''
         if not (self.game_process == None):
             self.game_process.terminate()
+
+    def shutdown(self):
+        # In the future, maybe an option will specify to kill Minecraft when shutting down a profile instance?
+        pass
