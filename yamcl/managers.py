@@ -142,36 +142,36 @@ class VersionsListManager:
         self.Launcher = launcher_obj
 
         self.BASE_PATH = self.Launcher.ROOT_PATH.joinpath("bin/versions.json")
-        self.versions_json = None
+        if self.BASE_PATH.exists():
+            versions_path = str(self.BASE_PATH)
+            self.versions_json = FileTools.read_json(versions_path)
+        else:
+            self.versions_json = None
 
     def download_versions(self):
         '''
         Downloads the latest versions.json from the official servers
         '''
-        tmp_file_object = str(URL("versions/versions.json", URL.DOWNLOAD))
+        tmp_file_object = URL("versions/versions.json", URL.DOWNLOAD).url_object()
         versions_path = str(self.BASE_PATH)
         FileTools.write_object(versions_path, tmp_file_object)
 
-        self.versions_json = None
-        self.get_versions()
+        self.versions_json = FileTools.read_json(versions_path)
 
     def get_versions(self):
         '''
-        Returns the object form of the versions.json file. If it is not loaded, it will be automatically loaded.
+        Returns the object form of the versions.json file
         '''
-        if (self.versions_json is None):
-            versions_path = str(self.BASE_PATH)
-            self.versions_json = FileTools.read_json(versions_path)
         return self.versions_json
 
     def version_exists(self, version_id):
-        for current_version in self.version_json["versions"]:
-            if current_version == version_id:
+        for current_version in self.versions_json["versions"]:
+            if current_version["id"] == version_id:
                 return True
         return False
 
     def get_latest_release(self):
-        pass
+        return self.versions_json["latest"]["release"]
 
     def get_latest_snapshot(self):
-        pass
+        return self.versions_json["latest"]["snapshot"]

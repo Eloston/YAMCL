@@ -395,10 +395,89 @@ class ProfileInstanceTab(QtGui.QWidget):
         self.Launcher.ProfileManager.delete_profile_instance(self.ProfileInstance.get_name())
         super(ProfileInstanceTab, self).close()
 
+class OfficialVersionsIndexTreeModel(QtCore.QAbstractItemModel):
+    def __init__(self, data, parent=None):
+        super(OfficialVersionsIndexTreeModel, self).__init__(parent)
+
+    def index(self):
+        pass
+
+    def parent(self):
+        pass
+
+    def rowCount(self):
+        pass
+
+    def columnCount(self):
+        pass
+
+    def data(self):
+        pass
+
 class VersionsManagerTab(QtGui.QWidget):
     def __init__(self, launcher_obj, parent=None):
         super(VersionsManagerTab, self).__init__(parent)
         self.Launcher = launcher_obj
+
+        official_versions_groupbox = QtGui.QGroupBox("Official Versions Index")
+        index_refresh_button = QtGui.QPushButton("Refresh List")
+        self.install_selected_button = QtGui.QPushButton("Install Selected")
+        self.install_selected_button.setEnabled(False)
+        self.official_versions_treeview = QtGui.QTreeView()
+        official_versions_buttonlayout = QtGui.QVBoxLayout()
+        official_versions_buttonlayout.addWidget(index_refresh_button)
+        official_versions_buttonlayout.addStretch()
+        official_versions_buttonlayout.addWidget(QtGui.QLabel("Latest Release:"))
+        self.latest_release_label = QtGui.QLabel("Unknown")
+        official_versions_buttonlayout.addWidget(self.latest_release_label)
+        official_versions_buttonlayout.addWidget(QtGui.QLabel("Latest Snapshot:"))
+        self.latest_snapshot_label = QtGui.QLabel("Unknown")
+        official_versions_buttonlayout.addWidget(self.latest_snapshot_label)
+        official_versions_buttonlayout.addStretch()
+        official_versions_buttonlayout.addWidget(self.install_selected_button)
+        official_versions_layout = QtGui.QHBoxLayout()
+        official_versions_layout.addWidget(self.official_versions_treeview)
+        official_versions_layout.addLayout(official_versions_buttonlayout)
+        official_versions_groupbox.setLayout(official_versions_layout)
+
+        manage_versions_groupbox = QtGui.QGroupBox("Manage Versions")
+        self.manage_versions_treeview = QtGui.QTreeView()
+        self.edit_notes_button = QtGui.QPushButton("Edit Notes")
+        self.edit_notes_button.setEnabled(False)
+        self.open_directory_button = QtGui.QPushButton("Open Directory")
+        self.open_directory_button.setEnabled(False)
+        self.rename_button = QtGui.QPushButton("Rename")
+        self.rename_button.setEnabled(False)
+        self.delete_button = QtGui.QPushButton("Delete")
+        self.delete_button.setEnabled(False)
+        manage_versions_buttonlayout = QtGui.QVBoxLayout()
+        manage_versions_buttonlayout.addWidget(QtGui.QLabel("Selected Version:"))
+        manage_versions_buttonlayout.addWidget(self.edit_notes_button)
+        manage_versions_buttonlayout.addWidget(self.open_directory_button)
+        manage_versions_buttonlayout.addWidget(self.rename_button)
+        manage_versions_buttonlayout.addWidget(self.delete_button)
+        manage_versions_buttonlayout.addStretch()
+        manage_versions_layout = QtGui.QHBoxLayout()
+        manage_versions_layout.addWidget(self.manage_versions_treeview)
+        manage_versions_layout.addLayout(manage_versions_buttonlayout)
+        manage_versions_groupbox.setLayout(manage_versions_layout)
+
+        local_storage_button = QtGui.QPushButton("Local Storage")
+        existing_official_button = QtGui.QPushButton("Existing Official Version")
+        install_buttonlayout = QtGui.QHBoxLayout()
+        install_buttonlayout.addWidget(QtGui.QLabel("Install from:"))
+        install_buttonlayout.addWidget(local_storage_button)
+        install_buttonlayout.addWidget(existing_official_button)
+        install_buttonlayout.addStretch()
+
+        main_layout = QtGui.QVBoxLayout()
+        main_layout.addWidget(official_versions_groupbox)
+        main_layout.addWidget(manage_versions_groupbox)
+        main_layout.addLayout(install_buttonlayout)
+        self.setLayout(main_layout)
+
+    def _refresh_list(self):
+        pass
 
 class LibrariesManagerTab(QtGui.QWidget):
     def __init__(self, launcher_obj, parent=None):
@@ -413,6 +492,7 @@ class MainGUI(QtGui.QMainWindow):
         MainTabs = QtGui.QTabWidget()
         MainTabs.addTab(AccountTab(self.Launcher), "Account")
         MainTabs.addTab(ProfilesTab(self.Launcher), "Profiles")
+        MainTabs.addTab(VersionsManagerTab(self.Launcher), "Versions Manager")
 
         self.add_menus()
         self.setCentralWidget(MainTabs)

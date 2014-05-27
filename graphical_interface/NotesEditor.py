@@ -16,7 +16,7 @@ along with YAMCL.  If not, see {http://www.gnu.org/licenses/}.
 from PySide import QtCore, QtGui
 
 class NotesEditor(QtGui.QDialog):
-    def __init__(self, profile_name, notes_content, set_notes_func, parent=None):
+    def __init__(self, title_text, notes_content, set_notes_func, parent=None):
         super(NotesEditor, self).__init__(parent)
 
         self.set_notes = set_notes_func
@@ -34,7 +34,7 @@ class NotesEditor(QtGui.QDialog):
 
         self.setLayout(verticalLayout)
 
-        self.setWindowTitle("YAMCL: Notes Editor for: " + profile_name)
+        self.setWindowTitle("YAMCL: Notes Editor for: " + title_text)
 
         self.rejected.connect(self._close_editor)
 
