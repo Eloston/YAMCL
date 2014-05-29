@@ -15,7 +15,7 @@ along with YAMCL.  If not, see {http://www.gnu.org/licenses/}.
 
 import pathlib
 
-from yamcl.tools import FileTools
+from yamcl.tools import FileTools, JSONTools
 from yamcl.globals import URL
 
 class AssetsManager:
@@ -141,22 +141,14 @@ class VersionsListManager:
     def __init__(self, launcher_obj):
         self.Launcher = launcher_obj
 
-        self.BASE_PATH = self.Launcher.ROOT_PATH.joinpath("bin/versions.json")
-        if self.BASE_PATH.exists():
-            versions_path = str(self.BASE_PATH)
-            self.versions_json = FileTools.read_json(versions_path)
-        else:
-            self.versions_json = None
+        self.versions_json = None
 
     def download_versions(self):
         '''
         Downloads the latest versions.json from the official servers
         '''
         tmp_file_object = URL("versions/versions.json", URL.DOWNLOAD).url_object()
-        versions_path = str(self.BASE_PATH)
-        FileTools.write_object(versions_path, tmp_file_object)
-
-        self.versions_json = FileTools.read_json(versions_path)
+        self.versions_json = JSONTools.read_json(tmp_file_object.read().decode("UTF-8"))
 
     def get_versions(self):
         '''

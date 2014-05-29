@@ -395,35 +395,59 @@ class ProfileInstanceTab(QtGui.QWidget):
         self.Launcher.ProfileManager.delete_profile_instance(self.ProfileInstance.get_name())
         super(ProfileInstanceTab, self).close()
 
-class OfficialVersionsIndexTreeModel(QtCore.QAbstractItemModel):
-    def __init__(self, data, parent=None):
-        super(OfficialVersionsIndexTreeModel, self).__init__(parent)
+class ProgressDialogEvents(QtCore.QObject):
+    set_label_sig = QtCore.Signal(str)
+    set_range_sig = QtCore.Signal(int, int)
+    set_value_sig = QtCore.Signal(int)
+    show_dialog_sig = QtCore.Signal()
+    close_dialog_sig = QtCore.Signal()
+    window_title = QtCore.Signal(str)
 
-    def index(self):
-        pass
+    def __init__(self):
+        QtCore.QObject.__init__(self)
 
-    def parent(self):
-        pass
+    def set_label(self, text):
+        self.set_label_sig.emit(text)
+        QtGui.QApplication.processEvents()
 
-    def rowCount(self):
-        pass
+    def status_update(self, label, value):
+        self.set_label_sig.emit(label)
+        self.set_value_sig.emit(round(value*100.0))
+        QtGui.QApplication.processEvents()
 
-    def columnCount(self):
-        pass
+    def show_dialog(self):
+        self.show_dialog_sig.emit()
+        QtGui.QApplication.processEvents()
 
-    def data(self):
-        pass
+    def set_range(self, minval, maxval):
+        self.set_range_sig.emit(minval, maxval)
+        QtGui.QApplication.processEvents()
+
+    def close_dialog(self):
+        self.close_dialog_sig.emit()
+        QtGui.QApplication.processEvents()
+
+    def set_window_title(self, text):
+        self.window_title.emit(text)
+        QtGui.QApplication.processEvents()
 
 class VersionsManagerTab(QtGui.QWidget):
     def __init__(self, launcher_obj, parent=None):
         super(VersionsManagerTab, self).__init__(parent)
         self.Launcher = launcher_obj
 
-        official_versions_groupbox = QtGui.QGroupBox("Official Versions Index")
-        index_refresh_button = QtGui.QPushButton("Refresh List")
+        official_versions_groupbox = QtGui.QGroupBox("Download Official Versions")
+        index_refresh_button = QtGui.QPushButton("Download List")
+        index_refresh_button.clicked.connect(self._download_list)
         self.install_selected_button = QtGui.QPushButton("Install Selected")
+        self.install_selected_button.clicked.connect(self._install_selected)
         self.install_selected_button.setEnabled(False)
+        self.official_versions_model = QtGui.QStandardItemModel()
+        self.official_versions_model.setHorizontalHeaderLabels(["Click 'Download List' to populate"])
         self.official_versions_treeview = QtGui.QTreeView()
+        self.official_versions_treeview.setModel(self.official_versions_model)
+        self.official_versions_treeview.setSelectionModel(QtGui.QItemSelectionModel(self.official_versions_model))
+        self.official_versions_treeview.selectionModel().currentChanged.connect(self._official_versions_item_change)
         official_versions_buttonlayout = QtGui.QVBoxLayout()
         official_versions_buttonlayout.addWidget(index_refresh_button)
         official_versions_buttonlayout.addStretch()
@@ -465,7 +489,7 @@ class VersionsManagerTab(QtGui.QWidget):
         local_storage_button = QtGui.QPushButton("Local Storage")
         existing_official_button = QtGui.QPushButton("Existing Official Version")
         install_buttonlayout = QtGui.QHBoxLayout()
-        install_buttonlayout.addWidget(QtGui.QLabel("Install from:"))
+        install_buttonlayout.addWidget(QtGui.QLabel("Install custom version from:"))
         install_buttonlayout.addWidget(local_storage_button)
         install_buttonlayout.addWidget(existing_official_button)
         install_buttonlayout.addStretch()
@@ -476,8 +500,67 @@ class VersionsManagerTab(QtGui.QWidget):
         main_layout.addLayout(install_buttonlayout)
         self.setLayout(main_layout)
 
-    def _refresh_list(self):
-        pass
+        self.progress_dialog_events = ProgressDialogEvents()
+        self.progress_dialog = QtGui.QProgressDialog()
+        self.progress_dialog_events.set_label_sig.connect(self.progress_dialog.setLabelText, type=QtCore.Qt.QueuedConnection)
+        self.progress_dialog_events.set_range_sig.connect(self.progress_dialog.setRange, type=QtCore.Qt.QueuedConnection)
+        self.progress_dialog_events.set_value_sig.connect(self.progress_dialog.setValue, type=QtCore.Qt.QueuedConnection)
+        self.progress_dialog_events.show_dialog_sig.connect(self.progress_dialog.show, type=QtCore.Qt.QueuedConnection)
+        self.progress_dialog_events.close_dialog_sig.connect(self.progress_dialog.close, type=QtCore.Qt.QueuedConnection)
+        self.progress_dialog_events.window_title.connect(self.progress_dialog.setWindowTitle, type=QtCore.Qt.QueuedConnection)
+        self.progress_dialog_events.set_range(0, 100)
+        self.progress_dialog.setAutoClose(False)
+
+    def _populate_official_versions_treeview(self):
+        self.install_selected_button.setEnabled(False)
+        data = self.Launcher.VersionsListManager.get_versions()
+        version_type_dict = dict()
+        for current_version in data["versions"]:
+            if not self.Launcher.BinaryManager.version_exists(current_version["id"], "vanilla"):
+                if not current_version["type"] in version_type_dict:
+                    type_item = QtGui.QStandardItem(current_version["type"])
+                    type_item.setFlags(QtCore.Qt.ItemIsEnabled)
+                    version_type_dict[current_version["type"]] = type_item
+                version_item = QtGui.QStandardItem(current_version["id"])
+                version_item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                version_type_dict[current_version["type"]].appendRow(version_item)
+        self.official_versions_model.clear()
+        self.official_versions_model.setHorizontalHeaderLabels(["Official Versions Available"])
+        root_item = self.official_versions_model.invisibleRootItem()
+        for item_type in version_type_dict:
+            root_item.appendRow(version_type_dict[item_type])
+
+    def _load_official_versions(self):
+        self._populate_official_versions_treeview()
+        self.latest_release_label.setText(self.Launcher.VersionsListManager.get_latest_release())
+        self.latest_snapshot_label.setText(self.Launcher.VersionsListManager.get_latest_snapshot())
+
+    def _download_list(self):
+        first_time = self.Launcher.VersionsListManager.get_versions() == None
+        self.Launcher.VersionsListManager.download_versions()
+        self._load_official_versions()
+        if not first_time:
+            QtGui.QMessageBox.information(self, "YAMCL: Download Available Versions Index", "The latest versions index has been downloaded.")
+
+    def _official_versions_item_change(self, index, previous):
+        self.install_selected_button.setEnabled(not self.official_versions_model.itemFromIndex(index).hasChildren())
+
+    def _install_selected(self):
+        vanilla_id = self.official_versions_model.itemFromIndex(self.official_versions_treeview.currentIndex()).text()
+        clicked_button = QtGui.QMessageBox.question(self, "YAMCL: Install " + vanilla_id + "?", "You have chosen to install: " + vanilla_id + "\nAre you sure you want to continue?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+        if clicked_button == QtGui.QMessageBox.Yes:
+            self.progress_dialog_events.set_window_title("Downloading " + vanilla_id)
+            self.progress_dialog_events.status_update("Downloading binary", 0.5)
+            self.progress_dialog_events.show_dialog()
+            self.Launcher.BinaryManager.download_official(vanilla_id)
+            self.progress_dialog_events.status_update("Downloading binary", 1.0)
+            binary_parser = self.Launcher.BinaryManager.get_binary_parser(vanilla_id, "vanilla")
+            self.Launcher.LibraryManager.download_missing(binary_parser.get_library_parsers(), self.progress_dialog_events.status_update)
+            self.Launcher.AssetsManager.download_index(binary_parser.get_assets_id())
+            self.Launcher.AssetsManager.download_missing(binary_parser.get_assets_id(), self.progress_dialog_events.status_update)
+            self.progress_dialog_events.close_dialog()
+            self._load_official_versions()
+            QtGui.QMessageBox.information(self, "YAMCL: Installed " + vanilla_id, "Official version " + vanilla_id + " installed successfully")
 
 class LibrariesManagerTab(QtGui.QWidget):
     def __init__(self, launcher_obj, parent=None):
