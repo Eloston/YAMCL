@@ -26,7 +26,7 @@ class GeneralAccount:
         self.uuid = "00000000-0000-0000-0000-000000000000"
         self.access_token = None
         self.user_type = "legacy"
-        self.user_properties = str(dict())
+        self.user_properties = str(dict()) # Unused?
         self.session_id = "-" # This is deprecated in the Yggdrasil authentication system
 
     def get_game_username(self):
@@ -113,6 +113,7 @@ class OnlineAccount(GeneralAccount):
                 self.signedin = True
                 self.access_token = server_data["accessToken"]
                 self.uuid = server_data["selectedProfile"]["id"]
+                self.game_username = server_data["selectedProfile"]["name"]
                 self.user_type = "mojang"
                 if "legacy" in server_data["selectedProfile"]:
                     if server_data["availableProfiles"]["legacy"]:

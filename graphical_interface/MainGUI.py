@@ -442,11 +442,11 @@ class VersionsManagerTab(QtGui.QWidget):
         self.install_selected_button = QtGui.QPushButton("Install Selected")
         self.install_selected_button.clicked.connect(self._install_selected)
         self.install_selected_button.setEnabled(False)
-        self.official_versions_model = QtGui.QStandardItemModel()
-        self.official_versions_model.setHorizontalHeaderLabels(["Click 'Download List' to populate"])
+        official_versions_model = QtGui.QStandardItemModel()
+        official_versions_model.setHorizontalHeaderLabels(["Click 'Download List' to populate"])
         self.official_versions_treeview = QtGui.QTreeView()
-        self.official_versions_treeview.setModel(self.official_versions_model)
-        self.official_versions_treeview.setSelectionModel(QtGui.QItemSelectionModel(self.official_versions_model))
+        self.official_versions_treeview.setModel(official_versions_model)
+        self.official_versions_treeview.setSelectionModel(QtGui.QItemSelectionModel(official_versions_model))
         self.official_versions_treeview.selectionModel().currentChanged.connect(self._official_versions_item_change)
         official_versions_buttonlayout = QtGui.QVBoxLayout()
         official_versions_buttonlayout.addWidget(index_refresh_button)
@@ -466,6 +466,10 @@ class VersionsManagerTab(QtGui.QWidget):
 
         manage_versions_groupbox = QtGui.QGroupBox("Manage Versions")
         self.manage_versions_treeview = QtGui.QTreeView()
+        manage_versions_model = QtGui.QStandardItemModel()
+        self.manage_versions_treeview.setModel(manage_versions_model)
+        self.manage_versions_treeview.setSelectionModel(QtGui.QItemSelectionModel(manage_versions_model))
+        self.manage_versions_treeview.selectionModel().currentChanged.connect(self._manage_versions_item_change)
         self.edit_notes_button = QtGui.QPushButton("Edit Notes")
         self.edit_notes_button.setEnabled(False)
         self.open_directory_button = QtGui.QPushButton("Open Directory")
@@ -510,6 +514,8 @@ class VersionsManagerTab(QtGui.QWidget):
         self.progress_dialog_events.window_title.connect(self.progress_dialog.setWindowTitle, type=QtCore.Qt.QueuedConnection)
         self.progress_dialog_events.set_range(0, 100)
         self.progress_dialog.setAutoClose(False)
+        
+        self._populate_manage_versions_treeview()
 
     def _populate_official_versions_treeview(self):
         self.install_selected_button.setEnabled(False)
@@ -524,9 +530,9 @@ class VersionsManagerTab(QtGui.QWidget):
                 version_item = QtGui.QStandardItem(current_version["id"])
                 version_item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
                 version_type_dict[current_version["type"]].appendRow(version_item)
-        self.official_versions_model.clear()
-        self.official_versions_model.setHorizontalHeaderLabels(["Official Versions Available"])
-        root_item = self.official_versions_model.invisibleRootItem()
+        self.official_versions_treeview.model().clear()
+        self.official_versions_treeview.model().setHorizontalHeaderLabels(["Official Versions Available"])
+        root_item = self.official_versions_treeview.model().invisibleRootItem()
         for item_type in version_type_dict:
             root_item.appendRow(version_type_dict[item_type])
 
@@ -543,10 +549,10 @@ class VersionsManagerTab(QtGui.QWidget):
             QtGui.QMessageBox.information(self, "YAMCL: Download Available Versions Index", "The latest versions index has been downloaded.")
 
     def _official_versions_item_change(self, index, previous):
-        self.install_selected_button.setEnabled(not self.official_versions_model.itemFromIndex(index).hasChildren())
+        self.install_selected_button.setEnabled(not self.official_versions_treeview.model().itemFromIndex(index).hasChildren())
 
     def _install_selected(self):
-        vanilla_id = self.official_versions_model.itemFromIndex(self.official_versions_treeview.currentIndex()).text()
+        vanilla_id = self.official_versions_treeview.model().itemFromIndex(self.official_versions_treeview.currentIndex()).text()
         clicked_button = QtGui.QMessageBox.question(self, "YAMCL: Install " + vanilla_id + "?", "You have chosen to install: " + vanilla_id + "\nAre you sure you want to continue?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
         if clicked_button == QtGui.QMessageBox.Yes:
             self.progress_dialog_events.set_window_title("Downloading " + vanilla_id)
@@ -560,7 +566,36 @@ class VersionsManagerTab(QtGui.QWidget):
             self.Launcher.AssetsManager.download_missing(binary_parser.get_assets_id(), self.progress_dialog_events.status_update)
             self.progress_dialog_events.close_dialog()
             self._load_official_versions()
+            self._populate_manage_versions_treeview()
             QtGui.QMessageBox.information(self, "YAMCL: Installed " + vanilla_id, "Official version " + vanilla_id + " installed successfully")
+
+    def _populate_manage_versions_treeview(self):
+        self.edit_notes_button.setEnabled(False)
+        self.rename_button.setEnabled(False)
+        self.open_directory_button.setEnabled(False)
+        self.delete_button.setEnabled(False)
+        self.manage_versions_treeview.model().clear()
+        self.manage_versions_treeview.model().setHorizontalHeaderLabels(["Currently Installed Versions"])
+        for version_type in self.Launcher.BinaryManager.get_installed_versions():
+            type_item = QtGui.QStandardItem(version_type)
+            type_item.setFlags(QtCore.Qt.ItemIsEnabled)
+            for version_id in self.Launcher.BinaryManager.get_installed_versions()[version_type]:
+                version_item = QtGui.QStandardItem(version_id)
+                version_item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                type_item.appendRow(version_item)
+            self.manage_versions_treeview.model().invisibleRootItem().appendRow(type_item)
+
+    def _manage_versions_item_change(self, index, previous):
+        new_state = False
+        is_custom = False
+        if not self.manage_versions_treeview.model().itemFromIndex(index).hasChildren():
+            if isinstance(self.manage_versions_treeview.model().itemFromIndex(index).parent(), QtGui.QStandardItem):
+                new_state = True
+                is_custom = self.manage_versions_treeview.model().itemFromIndex(index).parent().text() == "custom"
+        self.edit_notes_button.setEnabled(is_custom and new_state)
+        self.rename_button.setEnabled(is_custom and new_state)
+        self.open_directory_button.setEnabled(new_state)
+        self.delete_button.setEnabled(new_state)
 
 class LibrariesManagerTab(QtGui.QWidget):
     def __init__(self, launcher_obj, parent=None):
