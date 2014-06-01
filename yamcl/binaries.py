@@ -62,6 +62,22 @@ class BinaryManager:
         new_instance = BinaryParser(self.Launcher, tmp_paths["json"], (version_type == "custom"))
         return new_instance
 
+    def get_binary_parser_list(self, exclude=None):
+        exclude_specified = isinstance(exclude, dict)
+        installed_versions = self.get_installed_versions()
+        parser_list = list()
+        for current_type in installed_versions:
+            for current_id in installed_versions[current_type]:
+                keep = False
+                if exclude_specified:
+                    try:
+                        keep = not current_id in exclude[current_type]
+                    except KeyError:
+                        keep = True
+                if keep:
+                    parser_list.append(self.get_binary_parser(current_id, current_type))
+        return parser_list
+
     def download_official(self, version_id):
         if self.version_exists(version_id, "vanilla"):
             raise Exception("Version " + version_id + " already exists") # TODO: More appropriate exception
@@ -78,11 +94,11 @@ class BinaryManager:
 
         self._flush_index()
 
-    def install_custom(self, version_id, version_path, version_json):
+    def install_custom(self, version_id, version_jar, version_json):
         if self.version_exists(version_id, "custom"):
             raise Exception("Version already exists") # TODO: More appropriate exception
         paths_dict = self.get_paths(version_id, "custom")
-        FileTools.copy(version_path, paths_dict["jar"])
+        FileTools.copy(version_jar, paths_dict["jar"])
         FileTools.copy(version_json, paths_dict["json"])
 
         current_listing = dict()
@@ -169,8 +185,11 @@ class BinaryParser:
             parser_list.append(yamcl.libraries.LibraryParser(self.Launcher, library_dict))
         return parser_list
 
+    def get_minimum_version(self):
+        return self.json_info["minimumLauncherVersion"]
+
     def is_compatible(self):
-        return self.json_info["minimumLauncherVersion"] <= self.Launcher.COMPATIBLE_VERSION
+        return self.get_minimum_version() <= self.Launcher.COMPATIBLE_VERSION
 
     def get_id(self):
         return self.json_info["id"]

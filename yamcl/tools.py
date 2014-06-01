@@ -173,6 +173,26 @@ class FileTools:
         '''
         shutil.move(src, dst)
 
+    @staticmethod
+    def exists(file_path):
+        '''
+        Wrapper around os.path.exists
+        '''
+        return os.path.exists(file_path)
+
+    @staticmethod
+    def is_file(file_path):
+        '''
+        Wrapper around os.path.isfile
+        '''
+        return os.path.isfile(file_path)
+
+    def dir_name(file_path):
+        '''
+        Wrapper around os.path.dirname
+        '''
+        return os.path.dirname(file_path)
+
 class PlatformTools:
     def __init__(self, java_command):
         self.os_info = dict()

@@ -133,7 +133,10 @@ class LibraryManager:
         '''
         if library_id in self.index:
             raise Exception("Library already exists") # TODO: More appropriate exception
-        final_path = pathlib.Path(destination_path)
+        if isinstance(destination_path, list):
+            final_path = self.BASE_PATH.joinpath(*destination_path)
+        else:
+            final_path = pathlib.Path(destination_path) # Assuming absolute
         if is_natives:
             for current_source in source_paths:
                 try:
@@ -166,12 +169,16 @@ class LibraryManager:
         '''
         Returns a list of libraries not used in binary parsers 'binary_parser_list'
         '''
-        unused_library_ids = list()
+        used_library_ids = list()
         for binary_parser in binary_parser_list:
             for library_parser in binary_parser.get_library_parsers():
-                if not (library_parser.get_id() in self.index) and not (library_parser.get_id() in unused_library_ids):
-                    unused_library_ids.append(library_parser.get_id())
-        return unused_library_ids
+                if self.is_library_existant(library_parser) and not (library_parser.get_id() in used_library_ids):
+                    used_library_ids.append(library_parser.get_id())
+        junk_library_ids = list()
+        for installed_id in self.index:
+            if not installed_id in used_library_ids:
+                junk_library_ids.append(installed_id)
+        return junk_library_ids
 
 class LibraryParser:
     def __init__(self, launcher_obj, binary_dict):

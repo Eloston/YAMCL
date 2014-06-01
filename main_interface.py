@@ -15,6 +15,7 @@ along with YAMCL.  If not, see {http://www.gnu.org/licenses/}.
 
 import sys
 import argparse
+import traceback
 from PySide import QtCore, QtGui
 
 import yamcl.main
@@ -22,7 +23,36 @@ import yamcl.main
 import graphical_interface.MainGUI
 import graphical_interface.SplashScreen
 
+class DisplayExceptionDialog(QtGui.QDialog):
+    def __init__(self, *args):
+        super(DisplayExceptionDialog, self).__init__()
+
+        exception_details = QtGui.QTextBrowser()
+        exception_details.setPlainText(''.join(traceback.format_exception(*args)))
+
+        buttonBox = QtGui.QDialogButtonBox(self)
+        buttonBox.setOrientation(QtCore.Qt.Horizontal)
+        buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Close)
+        buttonBox.button(QtGui.QDialogButtonBox.Close).clicked.connect(self.reject)
+
+        main_layout = QtGui.QVBoxLayout()
+        main_layout.addWidget(QtGui.QLabel("YAMCL has encountered an unusual error. Details are below"))
+        main_layout.addWidget(exception_details)
+        main_layout.addWidget(QtGui.QLabel("Depending on the operation, it may or may not cause data corruption."))
+        main_layout.addWidget(buttonBox)
+
+        self.setLayout(main_layout)
+
+        self.setWindowTitle("YAMCL: Error")
+
+ExceptionDialog = None
+def exception_dialog_hook(*args):
+    global ExceptionDialog
+    ExceptionDialog = DisplayExceptionDialog(*args)
+    ExceptionDialog.show()
+
 if __name__ == '__main__':
+    sys.excepthook = exception_dialog_hook
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("--data-path", help="Override path to YAMCL's data directory", type=str, default=str())
     arg_parser.add_argument("--java-path", help="Override the Java executable to use", type=str, default=str())
