@@ -30,6 +30,7 @@ class Launcher:
     def __init__(self):
         self.COMPATIBLE_VERSION = 14
         self.PLATFORM_LIST = ["linux", "windows", "osx"]
+        self.VERSION = "0.0 DEVELOPMENT"
 
     def startup(self, data_path=str(), java_command=str()):
         '''

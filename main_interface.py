@@ -56,6 +56,8 @@ if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("--data-path", help="Override path to YAMCL's data directory", type=str, default=str())
     arg_parser.add_argument("--java-path", help="Override the Java executable to use", type=str, default=str())
+    arg_parser.add_argument("--disable-library-download-exclusive", help="Disables the downloading of libraries for the current platform only (default is enabled)", action="store_false", dest="library_download_exclusive")
+    arg_parser.set_defaults(library_download_exclusive=True)
     arg_returns = arg_parser.parse_args()
 
     app = QtGui.QApplication(sys.argv)
@@ -73,6 +75,7 @@ if __name__ == '__main__':
             else:
                 break
     splash_screen.close()
+    main_launcher.LibraryManager.set_download_exclusive(arg_returns.library_download_exclusive)
     if startup_status == "SUCCESS":
         main_gui = graphical_interface.MainGUI.MainGUI(main_launcher)
         main_gui.show()

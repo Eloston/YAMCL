@@ -703,6 +703,48 @@ class LibrariesManagerTab(QtGui.QWidget):
         super(LibrariesManagerTab, self).__init__(parent)
         self.Launcher = launcher_obj
 
+class InformationTab(QtGui.QWidget):
+    def __init__(self, launcher_obj, parent=None):
+        super(InformationTab, self).__init__(parent)
+        self.Launcher = launcher_obj
+
+        platform_info_groupbox = QtGui.QGroupBox("Platform Information")
+        java_path_textbox = QtGui.QLineEdit(self.Launcher.PlatformTools.get_java_path())
+        java_path_textbox.setReadOnly(True)
+        java_path_layout = QtGui.QHBoxLayout()
+        java_path_layout.addWidget(QtGui.QLabel("Java path:"))
+        java_path_layout.addWidget(java_path_textbox)
+        java_path_layout.addStretch()
+        java_arch_layout = QtGui.QHBoxLayout()
+        java_arch_layout.addWidget(QtGui.QLabel("Java architecture:"))
+        java_arch_layout.addWidget(QtGui.QLabel(self.Launcher.PlatformTools.get_java_arch()))
+        java_arch_layout.addStretch()
+        os_family_layout = QtGui.QHBoxLayout()
+        os_family_layout.addWidget(QtGui.QLabel("OS family:"))
+        os_family_layout.addWidget(QtGui.QLabel(self.Launcher.PlatformTools.get_os_family()))
+        os_family_layout.addStretch()
+        platform_info_groupbox_layout = QtGui.QVBoxLayout()
+        platform_info_groupbox_layout.addLayout(java_path_layout)
+        platform_info_groupbox_layout.addLayout(java_arch_layout)
+        platform_info_groupbox_layout.addLayout(os_family_layout)
+        platform_info_groupbox.setLayout(platform_info_groupbox_layout)
+
+        libraries_info_groupbox = QtGui.QGroupBox("Libraries Info")
+        libraries_download_specific_layout = QtGui.QHBoxLayout()
+        libraries_download_specific_layout.addWidget(QtGui.QLabel("Is libraries download-exclusive:"))
+        libraries_download_specific_layout.addWidget(QtGui.QLabel(str(self.Launcher.LibraryManager.is_download_exclusive())))
+        libraries_download_specific_layout.addStretch()
+        libraries_info_groupbox_layout = QtGui.QVBoxLayout()
+        libraries_info_groupbox_layout.addLayout(libraries_download_specific_layout)
+        libraries_info_groupbox.setLayout(libraries_info_groupbox_layout)
+
+        main_layout = QtGui.QVBoxLayout()
+        main_layout.addWidget(platform_info_groupbox)
+        main_layout.addWidget(libraries_info_groupbox)
+        main_layout.addStretch()
+
+        self.setLayout(main_layout)
+
 class MainGUI(QtGui.QMainWindow):
     def __init__(self, launcher_obj):
         super(MainGUI, self).__init__()
@@ -712,10 +754,11 @@ class MainGUI(QtGui.QMainWindow):
         MainTabs.addTab(AccountTab(self.Launcher), "Account")
         MainTabs.addTab(ProfilesTab(self.Launcher), "Profiles")
         MainTabs.addTab(VersionsManagerTab(self.Launcher), "Versions Manager")
+        MainTabs.addTab(InformationTab(self.Launcher), "Information")
 
         self.add_menus()
         self.setCentralWidget(MainTabs)
-        self.statusBar().showMessage("Welcome to YAMCL!")
+        self.statusBar().showMessage("Welcome to YAMCL! Version: " + self.Launcher.VERSION)
         self.setWindowTitle("YAMCL")
 
     @staticmethod
@@ -740,7 +783,7 @@ class MainGUI(QtGui.QMainWindow):
         MainGUI.open_filebrowser(str(self.Launcher.ROOT_PATH), self.Launcher.PlatformTools.get_os_family())
 
     def _open_about_dialog(self):
-        QtGui.QMessageBox.about(self, "About YAMCL", "<center><h2>YAMCL</h2><h3>Yet Another MineCraft Launcher</h3><b>Version 0.0 DEVELOPMENT</b></center><p>This project is licensed under the GNU GPL version 3. Consult COPYING for the terms.</p><p>GitHub webpage: <a href=\"http://github.com/eloston/YAMCL\">http://github.com/eloston/YAMCL</a>")
+        QtGui.QMessageBox.about(self, "About YAMCL", "<center><h2>YAMCL</h2><h3>Yet Another MineCraft Launcher</h3><b>" + self.Launcher.VERSION + "</b></center><p>This project is licensed under the GNU GPL version 3. Consult COPYING for the terms.</p><p>GitHub webpage: <a href=\"http://github.com/eloston/YAMCL\">http://github.com/eloston/YAMCL</a>")
 
     def add_menus(self):
         yamcl_menu = self.menuBar().addMenu("&YAMCL")
