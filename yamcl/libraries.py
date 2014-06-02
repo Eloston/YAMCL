@@ -32,6 +32,9 @@ class LibraryManager:
     def _flush_index(self):
         FileTools.write_json(self.index_path, self.index)
 
+    def get_all_library_ids(self):
+        return list(self.index.keys())
+
     def is_download_exclusive(self):
         return self.download_exclusive
 

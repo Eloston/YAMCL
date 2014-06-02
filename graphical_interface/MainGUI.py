@@ -703,6 +703,47 @@ class LibrariesManagerTab(QtGui.QWidget):
         super(LibrariesManagerTab, self).__init__(parent)
         self.Launcher = launcher_obj
 
+        library_list_model = QtGui.QStandardItemModel()
+        self.library_list = QtGui.QListView()
+        self.library_list.setModel(library_list_model)
+        self.library_list.setSelectionModel(QtGui.QItemSelectionModel(library_list_model))
+        self.library_list.selectionModel().currentChanged.connect(self._selected_library_change)
+
+        add_library_local_storage_button = QtGui.QPushButton("Add from Local Storage")
+        refresh_list_button = QtGui.QPushButton("Refresh")
+        refresh_list_button.clicked.connect(self._populate_library_list)
+        self.rename_button = QtGui.QPushButton("Rename")
+        self.rename_button.setEnabled(False)
+        self.delete_button = QtGui.QPushButton("Delete")
+        self.delete_button.setEnabled(False)
+        button_actions_layout = QtGui.QHBoxLayout()
+        button_actions_layout.addWidget(add_library_local_storage_button)
+        button_actions_layout.addWidget(refresh_list_button)
+        button_actions_layout.addStretch()
+        button_actions_layout.addWidget(QtGui.QLabel("Selected Library:"))
+        button_actions_layout.addWidget(self.rename_button)
+        button_actions_layout.addWidget(self.delete_button)
+
+        main_layout = QtGui.QVBoxLayout()
+        main_layout.addWidget(QtGui.QLabel("Installed Libraries:"))
+        main_layout.addWidget(self.library_list)
+        main_layout.addLayout(button_actions_layout)
+
+        self.setLayout(main_layout)
+
+        self._populate_library_list()
+
+    def _populate_library_list(self):
+        self.library_list.model().clear()
+        for library_id in self.Launcher.LibraryManager.get_all_library_ids():
+            self.library_list.model().invisibleRootItem().appendRow(QtGui.QStandardItem(library_id))
+        self.library_list.model().sort(0)
+
+    def _selected_library_change(self, index, previous):
+        is_selected = isinstance(self.library_list.model().itemFromIndex(index), QtGui.QStandardItem)
+        self.rename_button.setEnabled(is_selected)
+        self.delete_button.setEnabled(is_selected)
+
 class InformationTab(QtGui.QWidget):
     def __init__(self, launcher_obj, parent=None):
         super(InformationTab, self).__init__(parent)
@@ -754,6 +795,7 @@ class MainGUI(QtGui.QMainWindow):
         MainTabs.addTab(AccountTab(self.Launcher), "Account")
         MainTabs.addTab(ProfilesTab(self.Launcher), "Profiles")
         MainTabs.addTab(VersionsManagerTab(self.Launcher), "Versions Manager")
+        MainTabs.addTab(LibrariesManagerTab(self.Launcher), "Libraries Manager")
         MainTabs.addTab(InformationTab(self.Launcher), "Information")
 
         self.add_menus()
