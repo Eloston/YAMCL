@@ -300,6 +300,17 @@ class ProfileInstanceTab(QtGui.QWidget):
         specify_version_groupbox_layout.addStretch()
         specify_version_groupbox.setLayout(specify_version_groupbox_layout)
 
+        self.java_args_textbox = QtGui.QLineEdit()
+        self.java_args_textbox.setText(self.ProfileInstance.get_java_arguments())
+        self.java_args_textbox.textChanged.connect(self._java_arguments_changed)
+        self.save_java_args_button = QtGui.QPushButton("Save")
+        self.save_java_args_button.clicked.connect(self._save_java_arguments)
+        self.save_java_args_button.setEnabled(False)
+        java_args_layout = QtGui.QHBoxLayout()
+        java_args_layout.addWidget(QtGui.QLabel("Java arguments:"))
+        java_args_layout.addWidget(self.java_args_textbox)
+        java_args_layout.addWidget(self.save_java_args_button)
+
         open_profile_button = QtGui.QPushButton("Open Profile Directory")
         open_profile_button.clicked.connect(self._open_profile_path)
         launch_game_button = QtGui.QPushButton("Launch Game")
@@ -315,6 +326,7 @@ class ProfileInstanceTab(QtGui.QWidget):
 
         main_layout = QtGui.QVBoxLayout()
         main_layout.addWidget(notes_groupbox)
+        main_layout.addLayout(java_args_layout)
         main_layout.addWidget(specify_version_groupbox)
         main_layout.addLayout(action_buttons_layout)
         self.setLayout(main_layout)
@@ -323,6 +335,13 @@ class ProfileInstanceTab(QtGui.QWidget):
         if len(self.type_combobox.currentText()) > 0:
             self.update_id_list(self.Launcher.BinaryManager.get_installed_versions()[self.type_combobox.currentText()])
             self.id_combobox.setCurrentIndex(self.id_combobox.findText(self.ProfileInstance.get_last_version()["id"]))
+
+    def _save_java_arguments(self):
+        self.ProfileInstance.set_java_arguments(self.java_args_textbox.text())
+        self.save_java_args_button.setEnabled(False)
+
+    def _java_arguments_changed(self, new_text):
+        self.save_java_args_button.setEnabled(True)
 
     def _selected_id(self):
         tmp_text = self.id_combobox.currentText()
@@ -357,6 +376,8 @@ class ProfileInstanceTab(QtGui.QWidget):
         if self.ProfileInstance.check_game_running():
             QtGui.QMessageBox.critical(self, "YAMCL: Game Launch Error", "An instance of Minecraft is already running on this profile. Please close Minecraft first before launching again.", QtGui.QMessageBox.Ok)
             return
+        if self.save_java_args_button.isEnabled():
+            self._save_java_arguments()
         self.ProfileInstance.set_last_version(self._selected_id(), self._selected_type())
         self.ProfileInstance.launch_version(self._selected_id(), self._selected_type())
         self.console_output = ConsoleOutput.GameOutput(self.ProfileInstance.get_name(), self.ProfileInstance.get_output_object())

@@ -46,10 +46,6 @@ class ProfileManager:
             self.index[profile_name] = dict()
             self.index[profile_name]["directory"] = [FileTools.create_valid_name(profile_name)]
             profile_metadata = dict()
-            profile_metadata["notes"] = str()
-            profile_metadata["lastversion"] = dict()
-            profile_metadata["lastversion"]["id"] = ""
-            profile_metadata["lastversion"]["type"] = ""
             FileTools.write_json(str(self.BASE_PATH.joinpath(profile_name + "/yamcl_metadata.json")), profile_metadata)
             self._flush_index()
 
@@ -133,6 +129,11 @@ class ProfileInstance:
         '''
         Returns the last version launched
         '''
+        if not "lastversion" in self.metadata:
+            tmp = dict()
+            tmp["id"] = str()
+            tmp["type"] = str()
+            return tmp
         return self.metadata["lastversion"]
 
     def set_last_version(self, version_id, version_type):
@@ -147,6 +148,8 @@ class ProfileInstance:
         '''
         Returns a string containing the notes
         '''
+        if not "notes" in self.metadata:
+            return str()
         return self.metadata["notes"]
 
     def set_notes(self, new_notes):
@@ -154,6 +157,15 @@ class ProfileInstance:
         Updates notes for this profile
         '''
         self.metadata["notes"] = new_notes
+        self.flush_metadata()
+
+    def get_java_arguments(self):
+        if not "args" in self.metadata:
+            return "-Xmx1G"
+        return self.metadata["args"]
+
+    def set_java_arguments(self, new_args):
+        self.metadata["args"] = new_args
         self.flush_metadata()
 
     def check_game_running(self):
@@ -192,7 +204,7 @@ class ProfileInstance:
         if self.Launcher.PlatformTools.get_java_path() == None:
             raise Exception("Could not find a Java binary to launch") # TODO: more appropriate exception
         launch_arguments.append('"' + self.Launcher.PlatformTools.get_java_path() + '"')
-        launch_arguments.append("-Xmx1G") # TODO: More customizeable arguments
+        launch_arguments.append(self.get_java_arguments())
         libraries_dict = self.Launcher.LibraryManager.get_platform_paths(game_binary_parser.get_library_parsers())
         launch_arguments.append("-Djava.library.path=" + '"' + self.Launcher.PlatformTools.JAVA_PATH_DELIM.join(libraries_dict["natives"]) + '"')
         launch_arguments.append("-cp " + self.Launcher.PlatformTools.JAVA_PATH_DELIM.join(libraries_dict["jars"] + [version_paths["jar"]]))

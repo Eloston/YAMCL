@@ -104,7 +104,6 @@ class BinaryManager:
         current_listing = dict()
         current_listing["type"] = "custom"
         current_listing["name"] = version_id
-        current_listing["notes"] = str()
 
         self.index.append(current_listing)
 
@@ -123,7 +122,6 @@ class BinaryManager:
         current_listing = dict()
         current_listing["type"] = "custom"
         current_listing["name"] = custom_id
-        current_listing["notes"] = str()
 
         self.index.append(current_listing)
 
@@ -160,6 +158,8 @@ class BinaryManager:
     def get_notes(self, version_id):
         if not self.version_exists(version_id, "custom"):
             raise Exception("Custom version does not exist") # TODO: More appropriate exception
+        if not "notes" in self.index[self._get_version_index(version_id, "custom")]:
+            return str()
         return self.index[self._get_version_index(version_id, "custom")]["notes"]
 
     def set_notes(self, version_id, new_notes):
