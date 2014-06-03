@@ -33,16 +33,35 @@ class LocalLibraryInstaller(QtGui.QDialog):
         library_type_layout = QtGui.QHBoxLayout()
         library_type_layout.addWidget(QtGui.QLabel("Library Type:"))
         self.library_type_combobox = QtGui.QComboBox()
-        library_type_layout.addWidget(self.jar_textbox)
+        library_type_layout.addWidget(self.library_type_combobox)
 
         jar_settings_groupbox = QtGui.QGroupBox("Jar Settings")
         jar_settings_groupbox_layout = QtGui.QHBoxLayout()
         jar_settings_groupbox_layout.addWidget(QtGui.QLabel("Path:"))
         self.jar_path_textbox = QtGui.QLineEdit()
-        jar_settings_groupbox_layout.addWidget(self.jar_textbox)
+        jar_settings_groupbox_layout.addWidget(self.jar_path_textbox)
         jar_browse_button = QtGui.QPushButton("Browse")
         jar_browse_button.clicked.connect(self._browse_jar)
         jar_settings_groupbox_layout.addWidget(jar_browse_button)
+        jar_settings_groupbox.setLayout(jar_settings_groupbox_layout)
+
+        natives_settings_groupbox = QtGui.QGroupBox("Natives Settings")
+        natives_dir_model = QtGui.QStandardItemModel()
+        self.natives_dir_list = QtGui.QListView()
+        self.natives_dir_list.setModel(natives_dir_model)
+        self.natives_dir_list.setSelectionModel(QtGui.QItemSelectionModel(natives_dir_model))
+        self.natives_dir_list.selectionModel().currentChanged.connect(self._selected_native_change)
+        self.add_native_button = QtGui.QPushButton("Add Path")
+        self.add_native_button.setEnabled(False)
+        self.remove_native_button = QtGui.QPushButton("Remove Path")
+        self.remove_native_button.setEnabled(False)
+        natives_action_buttons_layout = QtGui.QHBoxLayout()
+        natives_action_buttons_layout.addWidget(self.add_native_button)
+        natives_action_buttons_layout.addWidget(self.remove_native_button)
+        natives_settings_groupbox_layout = QtGui.QVBoxLayout()
+        natives_settings_groupbox_layout.addWidget(self.natives_dir_list)
+        natives_settings_groupbox_layout.addLayout(natives_action_buttons_layout)
+        natives_settings_groupbox.setLayout(natives_settings_groupbox_layout)
 
         buttonBox = QtGui.QDialogButtonBox(self)
         buttonBox.setOrientation(QtCore.Qt.Horizontal)
@@ -53,6 +72,8 @@ class LocalLibraryInstaller(QtGui.QDialog):
         main_layout = QtGui.QVBoxLayout()
         main_layout.addLayout(name_layout)
         main_layout.addLayout(library_type_layout)
+        main_layout.addWidget(jar_settings_groupbox)
+        main_layout.addWidget(natives_settings_groupbox)
         main_layout.addWidget(buttonBox)
 
         self.setLayout(main_layout)
@@ -61,7 +82,12 @@ class LocalLibraryInstaller(QtGui.QDialog):
 
         self.rejected.connect(self._close_installer)
 
-    def _get_filebrowser_path(self, dialog_title, file_filter=None):
+    def _selected_native_change(self, index, previous):
+        is_selected = isinstance(self.natives_dir_list.model().itemFromIndex(index), QtGui.QStandardItem)
+        self.add_native_button.setEnabled(is_selected)
+        self.remove_native_button.setEnabled(is_selected)
+
+    def _get_filebrowser_file_path(self, dialog_title, file_filter=None):
         all_filters = "All Files(*)"
         if not file_filter == None:
             all_filters = file_filter + ";;" + all_filters
@@ -72,8 +98,16 @@ class LocalLibraryInstaller(QtGui.QDialog):
         else:
             return None
 
+    def _get_filebrowser_dir_path(self, dialog_title):
+        directory = QtGui.QFileDialog.getExistingDirectory(self, dialog_title, dir=self.last_filebrowser_dir)
+        if directory:
+            self._last_filebrowser_dir = directory
+            return directory
+        else:
+            return None
+
     def _browse_jar(self):
-        file_name = self._get_filebrowser_path("YAMCL: Browse JAR Path", "JAR Files (*.jar)")
+        file_name = self._get_filebrowser_file_path("YAMCL: Browse JAR Path", "JAR Files (*.jar)")
         if not file_name == None:
             self.jar_path_textbox.setText(file_name)
 
@@ -94,13 +128,12 @@ class LocalLibraryInstaller(QtGui.QDialog):
 
     def _complete_install(self):
         if not len(self.name_textbox.text()) > 0:
-            QtGui.QMessageBox.critical(self, "YAMCL: Custom Version Name Blank", "You cannot leave the custom version name blank.", QtGui.QMessageBox.Ok)
+            QtGui.QMessageBox.critical(self, "YAMCL: Library Name Blank", "You cannot leave the library name blank.", QtGui.QMessageBox.Ok)
             return
-        if self.name_textbox.text() in self.BinaryManager.get_installed_versions()["custom"]:
-            QtGui.QMessageBox.critical(self, "YAMCL: Custom Version Name Conflict", "Custom Version name '" + self.name_textbox.text() + "' already exists", QtGui.QMessageBox.Ok)
+        if self.name_textbox.text() in self.LibraryManager.get_all_library_ids():
+            QtGui.QMessageBox.critical(self, "YAMCL: Library Name Conflict", "Library name '" + self.name_textbox.text() + "' already exists", QtGui.QMessageBox.Ok)
             return
         if self._path_validator("JAR", self.jar_textbox.text()) and self._path_validator("JSON", self.json_textbox.text()):
-            self.BinaryManager.install_custom(self.name_textbox.text(), self.jar_textbox.text(), self.json_textbox.text())
             self.refresh_list()
             self.reject()
 

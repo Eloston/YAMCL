@@ -15,6 +15,7 @@ along with YAMCL.  If not, see {http://www.gnu.org/licenses/}.
 
 import subprocess
 import os
+import shlex
 
 from yamcl.tools import FileTools
 
@@ -140,6 +141,8 @@ class ProfileInstance:
         '''
         Sets the last version launched
         '''
+        if not "lastversion" in self.metadata:
+            self.metadata["lastversion"] = dict()
         self.metadata["lastversion"]["id"] = version_id
         self.metadata["lastversion"]["type"] = version_type
         self.flush_metadata()
@@ -204,14 +207,15 @@ class ProfileInstance:
         if self.Launcher.PlatformTools.get_java_path() == None:
             raise Exception("Could not find a Java binary to launch") # TODO: more appropriate exception
         launch_arguments.append('"' + self.Launcher.PlatformTools.get_java_path() + '"')
-        launch_arguments.append(self.get_java_arguments())
+        launch_arguments += self.get_java_arguments().split(" ")
         libraries_dict = self.Launcher.LibraryManager.get_platform_paths(game_binary_parser.get_library_parsers())
         launch_arguments.append("-Djava.library.path=" + '"' + self.Launcher.PlatformTools.JAVA_PATH_DELIM.join(libraries_dict["natives"]) + '"')
-        launch_arguments.append("-cp " + self.Launcher.PlatformTools.JAVA_PATH_DELIM.join(libraries_dict["jars"] + [version_paths["jar"]]))
+        launch_arguments.append("-cp")
+        launch_arguments.append(self.Launcher.PlatformTools.JAVA_PATH_DELIM.join(libraries_dict["jars"] + [version_paths["jar"]]))
         launch_arguments.append(game_binary_parser.get_launch_class())
-        launch_arguments.append(game_binary_parser.get_arguments(game_arguments))
+        launch_arguments += game_binary_parser.get_arguments(game_arguments)
         os.chdir(game_arguments["game_directory"]) # Needed for logs to be created in the proper directory
-        self.game_process = subprocess.Popen(" ".join(launch_arguments), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+        self.game_process = subprocess.Popen(args=shlex.split(" ".join(launch_arguments)), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
 
     def get_output_object(self):
         if self.check_game_running():

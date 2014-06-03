@@ -199,9 +199,14 @@ class BinaryParser:
 
     def get_arguments(self, values_dict):
         arguments_string = self.json_info["minecraftArguments"]
+        arguments_list = arguments_string.split(" ")
         for current_key in values_dict:
-            arguments_string = arguments_string.replace("${" + current_key + "}", values_dict[current_key])
-        return arguments_string
+            i = 0
+            while i < len(arguments_list):
+                if arguments_list[i] == "${" + current_key + "}":
+                    arguments_list[i] = values_dict[current_key]
+                i += 1
+        return arguments_list
 
     def get_assets_id(self):
         if "assets" in self.json_info:

@@ -18,7 +18,7 @@ import subprocess
 
 from PySide import QtCore, QtGui
 
-from graphical_interface import NotesEditor, ConsoleOutput, LocalVersionInstaller
+from graphical_interface import NotesEditor, ConsoleOutput, LocalVersionInstaller, LocalLibraryInstaller
 
 class AccountTab(QtGui.QWidget):
     def __init__(self, launcher_obj, parent=None):
@@ -311,16 +311,18 @@ class ProfileInstanceTab(QtGui.QWidget):
         java_args_layout.addWidget(self.java_args_textbox)
         java_args_layout.addWidget(self.save_java_args_button)
 
-        open_profile_button = QtGui.QPushButton("Open Profile Directory")
-        open_profile_button.clicked.connect(self._open_profile_path)
         launch_game_button = QtGui.QPushButton("Launch Game")
         launch_game_button.clicked.connect(self._launch_game)
+        open_profile_button = QtGui.QPushButton("Open Profile Directory")
+        open_profile_button.clicked.connect(self._open_profile_path)
+        kill_game_button = QtGui.QPushButton("Kill Game")
+        kill_game_button.clicked.connect(self._kill_game)
         show_game_output_button = QtGui.QPushButton("Show Game Output")
         show_game_output_button.clicked.connect(self._open_game_output)
         action_buttons_layout = QtGui.QHBoxLayout()
         action_buttons_layout.addWidget(open_profile_button)
         action_buttons_layout.addStretch()
-        action_buttons_layout.addWidget(launch_game_button)
+        action_buttons_layout.addWidget(kill_game_button)
         action_buttons_layout.addStretch()
         action_buttons_layout.addWidget(show_game_output_button)
 
@@ -328,6 +330,7 @@ class ProfileInstanceTab(QtGui.QWidget):
         main_layout.addWidget(notes_groupbox)
         main_layout.addLayout(java_args_layout)
         main_layout.addWidget(specify_version_groupbox)
+        main_layout.addWidget(launch_game_button)
         main_layout.addLayout(action_buttons_layout)
         self.setLayout(main_layout)
 
@@ -368,6 +371,12 @@ class ProfileInstanceTab(QtGui.QWidget):
 
     def _open_profile_path(self):
         MainGUI.open_filebrowser(str(self.ProfileInstance.get_path()), self.Launcher.PlatformTools.get_os_family())
+
+    def _kill_game(self):
+        if self.ProfileInstance.check_game_running():
+            self.ProfileInstance.kill_game()
+        else:
+            QtGui.QMessageBox.critical(self, "YAMCL: Kill Game Error", "Minecraft has to be running in order to be killed.", QtGui.QMessageBox.Ok)
 
     def _launch_game(self):
         if self._selected_id() == None or self._selected_type() == None:
@@ -703,6 +712,8 @@ class LibrariesManagerTab(QtGui.QWidget):
         super(LibrariesManagerTab, self).__init__(parent)
         self.Launcher = launcher_obj
 
+        self.library_installer = None
+
         library_list_model = QtGui.QStandardItemModel()
         self.library_list = QtGui.QListView()
         self.library_list.setModel(library_list_model)
@@ -710,11 +721,14 @@ class LibrariesManagerTab(QtGui.QWidget):
         self.library_list.selectionModel().currentChanged.connect(self._selected_library_change)
 
         add_library_local_storage_button = QtGui.QPushButton("Add from Local Storage")
+        add_library_local_storage_button.clicked.connect(self._open_library_installer)
         refresh_list_button = QtGui.QPushButton("Refresh")
         refresh_list_button.clicked.connect(self._populate_library_list)
         self.rename_button = QtGui.QPushButton("Rename")
+        self.rename_button.clicked.connect(self._rename_library)
         self.rename_button.setEnabled(False)
         self.delete_button = QtGui.QPushButton("Delete")
+        self.delete_button.clicked.connect(self._delete_library)
         self.delete_button.setEnabled(False)
         button_actions_layout = QtGui.QHBoxLayout()
         button_actions_layout.addWidget(add_library_local_storage_button)
@@ -743,6 +757,35 @@ class LibrariesManagerTab(QtGui.QWidget):
         is_selected = isinstance(self.library_list.model().itemFromIndex(index), QtGui.QStandardItem)
         self.rename_button.setEnabled(is_selected)
         self.delete_button.setEnabled(is_selected)
+
+    def _rename_library(self):
+        current_library_id = self.library_list.model().itemFromIndex(self.library_list.currentIndex()).text()
+        input_success = True
+        last_name = current_library_id
+        while input_success:
+            new_library_name, input_success = QtGui.QInputDialog.getText(self, "YAMCL: Rename Library", "Specify a new name for: " + current_library_id, QtGui.QLineEdit.Normal, last_name)
+            if input_success:
+                if not len(new_library_name) > 0:
+                    QtGui.QMessageBox.critical(self, "YAMCL: Rename Library Name Blank", "The new library name cannot be blank. Please specify a name.", QtGui.QMessageBox.Ok)
+                    continue
+                if new_library_name in self.Launcher.LibraryManager.get_all_library_ids():
+                    QtGui.QMessageBox.critical(self, "YAMCL: Rename Library Name Conflict", "Library name '" + new_library_name + "' already exists.", QtGui.QMessageBox.Ok)
+                    last_name = new_library_name
+                else:
+                    self.Launcher.LibraryManager.rename(current_library_id, new_library_name)
+                    self._populate_library_list()
+                    break
+
+    def _delete_library(self):
+        current_library_id = self.library_list.model().itemFromIndex(self.library_list.currentIndex()).text()
+        clicked_button = QtGui.QMessageBox.question(self, "YAMCL: Delete " + current_library_id, "Are you sure you want to delete library '" + current_library_id + "'?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+        if clicked_button == QtGui.QMessageBox.Yes:
+            self.Launcher.LibraryManager.delete(current_library_id)
+            self._populate_library_list()
+
+    def _open_library_installer(self):
+        self.library_installer = LocalLibraryInstaller.LocalLibraryInstaller(self.Launcher.LibraryManager, self._populate_library_list)
+        self.library_installer.show()
 
 class InformationTab(QtGui.QWidget):
     def __init__(self, launcher_obj, parent=None):
