@@ -41,7 +41,7 @@ class Launcher:
         if len(data_path) == 0:
             self.ROOT_PATH = pathlib.Path(os.path.expanduser("~"), ".yamcl")
         else:
-            self.ROOT_PATH = pathlib.Path(data_path)
+            self.ROOT_PATH = pathlib.Path(data_path).absolute()
 
         if (self.check_data_integrity()):
             self.PlatformTools = yamcl.tools.PlatformTools(java_command)
