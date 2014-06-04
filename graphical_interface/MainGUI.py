@@ -868,7 +868,7 @@ class MainGUI(QtGui.QMainWindow):
         MainGUI.open_filebrowser(str(self.Launcher.ROOT_PATH), self.Launcher.PlatformTools.get_os_family())
 
     def _open_about_dialog(self):
-        QtGui.QMessageBox.about(self, "About YAMCL", "<center><h2>YAMCL</h2><h3>Yet Another MineCraft Launcher</h3><b>" + self.Launcher.VERSION + "</b></center><p>This project is licensed under the GNU GPL version 3. Consult COPYING for the terms.</p><p>GitHub webpage: <a href=\"http://github.com/eloston/YAMCL\">http://github.com/eloston/YAMCL</a>")
+        QtGui.QMessageBox.about(self, "About YAMCL", "<center><h2>YAMCL</h2><h3>Yet Another MineCraft Launcher</h3><b>Version " + self.Launcher.VERSION + "</b></center><p>This project is licensed under the GNU GPL version 3. Consult COPYING for the terms.</p><p>GitHub webpage: <a href=\"http://github.com/eloston/YAMCL\">http://github.com/eloston/YAMCL</a>")
 
     def add_menus(self):
         yamcl_menu = self.menuBar().addMenu("&YAMCL")

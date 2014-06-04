@@ -187,6 +187,13 @@ class FileTools:
         '''
         return os.path.isfile(file_path)
 
+    def is_dir(dir_path):
+        '''
+        Wrapper around os.path.isdir
+        '''
+        return os.path.isdir(dir_path)
+
+    @staticmethod
     def dir_name(file_path):
         '''
         Wrapper around os.path.dirname
