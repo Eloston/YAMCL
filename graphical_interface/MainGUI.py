@@ -396,7 +396,7 @@ class ProfileInstanceTab(QtGui.QWidget):
         self.notes_editor.show()
 
     def _open_game_output(self):
-        if self.ProfileInstance.check_game_running():
+        if isinstance(self.console_output, ConsoleOutput.GameOutput):
             self.console_output.show()
         else:
             QtGui.QMessageBox.critical(self, "YAMCL: Game Output Error", "You must start Minecraft first before opening the output window.", QtGui.QMessageBox.Ok)
