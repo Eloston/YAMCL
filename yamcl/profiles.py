@@ -15,7 +15,6 @@ along with YAMCL.  If not, see {http://www.gnu.org/licenses/}.
 
 import subprocess
 import os
-import shlex
 
 from yamcl.tools import FileTools
 
