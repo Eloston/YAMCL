@@ -77,6 +77,8 @@ if __name__ == '__main__':
     splash_screen.close()
     main_launcher.LibraryManager.set_download_exclusive(arg_returns.library_download_exclusive)
     if startup_status == "SUCCESS":
+        if main_launcher.PlatformTools.get_java_path() == None:
+            QtGui.QMessageBox.critical(splash_screen, "YAMCL: Java Error", "YAMCL was not able to find Java on your system, or your specified Java path is not valid. You will not be able to launch the game.", QtGui.QMessageBox.Ok)
         main_gui = graphical_interface.MainGUI.MainGUI(main_launcher)
         main_gui.show()
         sys.exit(app.exec_())

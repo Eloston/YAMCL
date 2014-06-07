@@ -239,7 +239,7 @@ class PlatformTools:
 
         self.os_info["family"] = current_platform
         if self.os_info["arch"] == None: # On Windows, this statement will be True if the hack fails
-            self.os_info["arch"] = platform.architecture(self.java_path)[0][:2]
+            self.os_info["arch"] = platform.architecture(self.java_path)[0][:2] # If path doesn't exist, it will return the architecture of the running Python interpreter. On Windows, it will always return the architecture of the current Python.
 
     def get_java_path(self):
         '''
