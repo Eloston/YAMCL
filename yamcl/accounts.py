@@ -116,7 +116,7 @@ class OnlineAccount(GeneralAccount):
                 self.game_username = server_data["selectedProfile"]["name"]
                 self.user_type = "mojang"
                 if "legacy" in server_data["selectedProfile"]:
-                    if server_data["availableProfiles"]["legacy"]:
+                    if server_data["selectedProfile"]["legacy"]:
                         self.user_type = "legacy"
             else:
                 status_data[0] = False

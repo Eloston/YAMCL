@@ -30,7 +30,7 @@ class Launcher:
     def __init__(self):
         self.COMPATIBLE_VERSION = 14
         self.PLATFORM_LIST = ["linux", "windows", "osx"]
-        self.VERSION = "0.1"
+        self.VERSION = "0.1.2 DEV"
 
     def startup(self, data_path=str(), java_command=str()):
         '''
@@ -43,7 +43,7 @@ class Launcher:
         else:
             try:
                 self.ROOT_PATH = pathlib.Path(data_path)
-                self.ROOT_PATH.resolve()
+                self.ROOT_PATH = self.ROOT_PATH.resolve()
             except FileNotFoundError:
                 return "FAIL_DATACORRUPT"
 

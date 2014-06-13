@@ -730,11 +730,15 @@ class LibrariesManagerTab(QtGui.QWidget):
         self.delete_button = QtGui.QPushButton("Delete")
         self.delete_button.clicked.connect(self._delete_library)
         self.delete_button.setEnabled(False)
+        self.open_directory_button = QtGui.QPushButton("Open Directory")
+        self.open_directory_button.clicked.connect(self._open_library_directory)
+        self.open_directory_button.setEnabled(False)
         button_actions_layout = QtGui.QHBoxLayout()
         button_actions_layout.addWidget(add_library_local_storage_button)
         button_actions_layout.addWidget(refresh_list_button)
         button_actions_layout.addStretch()
         button_actions_layout.addWidget(QtGui.QLabel("Selected Library:"))
+        button_actions_layout.addWidget(self.open_directory_button)
         button_actions_layout.addWidget(self.rename_button)
         button_actions_layout.addWidget(self.delete_button)
 
@@ -757,6 +761,7 @@ class LibrariesManagerTab(QtGui.QWidget):
         is_selected = isinstance(self.library_list.model().itemFromIndex(index), QtGui.QStandardItem)
         self.rename_button.setEnabled(is_selected)
         self.delete_button.setEnabled(is_selected)
+        self.open_directory_button.setEnabled(is_selected)
 
     def _rename_library(self):
         current_library_id = self.library_list.model().itemFromIndex(self.library_list.currentIndex()).text()
@@ -782,6 +787,17 @@ class LibrariesManagerTab(QtGui.QWidget):
         if clicked_button == QtGui.QMessageBox.Yes:
             self.Launcher.LibraryManager.delete(current_library_id)
             self._populate_library_list()
+
+    def _open_library_directory(self):
+        current_library_id = self.library_list.model().itemFromIndex(self.library_list.currentIndex()).text()
+        current_library_path = self.Launcher.LibraryManager.get_library_path(current_library_id)
+        current_library_path = self.Launcher.LibraryManager.BASE_PATH.joinpath(current_library_path)
+        if current_library_path.is_dir():
+            MainGUI.open_filebrowser(str(current_library_path), self.Launcher.PlatformTools.get_os_family())
+        elif current_library_path.is_file():
+            MainGUI.open_filebrowser(str(current_library_path.parent), self.Launcher.PlatformTools.get_os_family())
+        else:
+            QtGui.QMessageBox.critical(self, "YAMCL: Open Library Directory Error", "Unable to open the directory for: '" + current_library_id + "'\nThe path is broken.", QtGui.QMessageBox.Ok)
 
     def _open_library_installer(self):
         self.library_installer = LocalLibraryInstaller.LocalLibraryInstaller(self.Launcher.LibraryManager, self._populate_library_list)
