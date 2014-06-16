@@ -216,10 +216,13 @@ class PlatformTools:
         if (java_command == str()):
             if current_platform == "windows":
                 import winreg
-                JAVA_REGISTRY_PATH = "Software\\JavaSoft\\Java Runtime Environment"
-                current_java_version = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, JAVA_REGISTRY_PATH, access=winreg.KEY_READ | winreg.KEY_WOW64_64KEY), "CurrentVersion")[0]
-                java_binary_path = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, JAVA_REGISTRY_PATH + "\\" + current_java_version, access=winreg.KEY_READ | winreg.KEY_WOW64_64KEY), "JavaHome")[0]
-                java_command = java_binary_path + "\\bin\\java.exe"
+                try:
+                    JAVA_REGISTRY_PATH = "Software\\JavaSoft\\Java Runtime Environment"
+                    current_java_version = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, JAVA_REGISTRY_PATH, access=winreg.KEY_READ | winreg.KEY_WOW64_64KEY), "CurrentVersion")[0]
+                    java_binary_path = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, JAVA_REGISTRY_PATH + "\\" + current_java_version, access=winreg.KEY_READ | winreg.KEY_WOW64_64KEY), "JavaHome")[0]
+                    java_command = java_binary_path + "\\bin\\java.exe"
+                except FileNotFoundError:
+                    java_command = str()
             else:
                 java_command = "java"
         self.java_path = shutil.which(os.path.expanduser(os.path.expandvars(java_command)))
