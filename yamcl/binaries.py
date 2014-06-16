@@ -179,10 +179,10 @@ class BinaryParser:
     def flush_info(self):
         FileTools.write_json(self.info_path, self.json_info)
 
-    def get_library_parsers(self):
+    def get_library_metadatas(self):
         parser_list = list()
         for library_dict in self.json_info["libraries"]:
-            parser_list.append(yamcl.libraries.LibraryParser(self.Launcher, library_dict))
+            parser_list.append(yamcl.libraries.LibraryMetadata(self.Launcher, library_dict))
         return parser_list
 
     def get_minimum_version(self):

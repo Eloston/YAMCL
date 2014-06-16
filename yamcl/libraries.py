@@ -41,39 +41,39 @@ class LibraryManager:
     def set_download_exclusive(self, value):
         self.download_exclusive = value
 
-    def is_library_existant(self, library_parser):
-        return library_parser.get_id() in self.index
+    def is_library_existant(self, library_metadata):
+        return library_metadata.get_id() in self.index
 
-    def is_natives_existant(self, library_parser, natives_extension):
-        natives_directory = self.BASE_PATH.joinpath(*self.index[library_parser.get_id()]["path"]).joinpath(natives_extension)
+    def is_natives_existant(self, library_metadata, natives_extension):
+        natives_directory = self.BASE_PATH.joinpath(*self.index[library_metadata.get_id()]["path"]).joinpath(natives_extension)
         return natives_directory.exists()
 
     def get_library_path(self, library_id):
         return pathlib.Path(*self.index[library_id]["path"])
 
-    def _download_library(self, library_parser):
-        if self.download_exclusive and not library_parser.current_system_supported():
+    def _download_library(self, library_metadata):
+        if self.download_exclusive and not library_metadata.current_system_supported():
             return
-        if library_parser.is_natives():
+        if library_metadata.is_natives():
             if self.download_exclusive:
-                all_extensions = [library_parser.get_current_system_natives_extension()]
+                all_extensions = [library_metadata.get_current_system_natives_extension()]
             else:
-                all_extensions = library_parser.get_all_natives_extensions()
+                all_extensions = library_metadata.get_all_natives_extensions()
             natives_list = all_extensions
-        if self.is_library_existant(library_parser):
-            if library_parser.is_natives():
+        if self.is_library_existant(library_metadata):
+            if library_metadata.is_natives():
                 natives_list = list()
                 for current_extension in all_extensions:
-                    if not self.is_natives_existant(library_parser, current_extension):
+                    if not self.is_natives_existant(library_metadata, current_extension):
                         natives_list.append(current_extension)
                 if natives_list == list():
                     return # Natives already exists
             else:
                 return # Library already exists
-        if library_parser.is_natives():
-            download_list = library_parser.get_download_list(natives_list)
+        if library_metadata.is_natives():
+            download_list = library_metadata.get_download_list(natives_list)
         else:
-            download_list = library_parser.get_download_list()
+            download_list = library_metadata.get_download_list()
         for current_library in download_list:
             current_tries = 1
             while current_tries <= 3:
@@ -82,46 +82,46 @@ class LibraryManager:
                 hasher = hashlib.sha1()
                 hasher.update(open(str(self.BASE_PATH.joinpath(current_library["path"])), mode="rb").read())
                 if hasher.hexdigest() == correct_hash:
-                    if library_parser.is_natives():
+                    if library_metadata.is_natives():
                         natives_directory = self.BASE_PATH.joinpath(current_library["path"].parent.joinpath(current_library["natives_extension"]))
                         jar_path = str(self.BASE_PATH.joinpath(current_library["path"]))
-                        FileTools.extract_jar_files(FileTools.get_jar_object(jar_path), str(natives_directory), library_parser.get_natives_exclude())
+                        FileTools.extract_jar_files(FileTools.get_jar_object(jar_path), str(natives_directory), library_metadata.get_natives_exclude())
                         FileTools.delete_and_clean(jar_path)
                     break
                 else:
                     current_tries += 1
             if current_tries == 3:
-                raise Exception("Failed to download library " + library_parser.get_id()) # TODO: More appropriate exception
-        self.index[library_parser.get_id()] = dict()
-        if library_parser.is_natives():
-            self.index[library_parser.get_id()]["path"] = download_list[0]["path"].parent.parts
+                raise Exception("Failed to download library " + library_metadata.get_id()) # TODO: More appropriate exception
+        self.index[library_metadata.get_id()] = dict()
+        if library_metadata.is_natives():
+            self.index[library_metadata.get_id()]["path"] = download_list[0]["path"].parent.parts
         else:
-            self.index[library_parser.get_id()]["path"] = download_list[0]["path"].parts
+            self.index[library_metadata.get_id()]["path"] = download_list[0]["path"].parts
 
-    def download_missing(self, library_parser_list, progress_function=None):
+    def download_missing(self, library_metadata_list, progress_function=None):
         if not (progress_function == None):
             downloaded_count = 0
             progress_function("Downloading libraries", 0)
-        for current_parser in library_parser_list:
-            self._download_library(current_parser)
+        for current_metadata in library_metadata_list:
+            self._download_library(current_metadata)
             if not (progress_function == None):
                 downloaded_count += 1
-                progress_function("Downloading libraries", downloaded_count/len(library_parser_list))
+                progress_function("Downloading libraries", downloaded_count/len(library_metadata_list))
         self._flush_index()
 
-    def get_platform_paths(self, library_parser_list):
+    def get_platform_paths(self, library_metadata_list):
         libraries_dict = dict()
         libraries_dict["jars"] = list()
         libraries_dict["natives"] = list()
-        for current_parser in library_parser_list:
-            if current_parser.current_system_supported():
-                if not self.is_library_existant(current_parser):
-                    raise Exception("Library", current_parser.get_id(), "does not exist") # TODO: More appropriate exception
-                base_path = self.BASE_PATH.joinpath(self.get_library_path(current_parser.get_id()))
-                if current_parser.is_natives():
-                    current_extension = current_parser.get_current_system_natives_extension()
-                    if not self.is_natives_existant(current_parser, current_extension):
-                        raise Exception("Natives", current_extension, "for library", current_parser.get_id(), "does not exist") # TODO: More appropriate exception
+        for current_metadata in library_metadata_list:
+            if current_metadata.current_system_supported():
+                if not self.is_library_existant(current_metadata):
+                    raise Exception("Library", current_metadata.get_id(), "does not exist") # TODO: More appropriate exception
+                base_path = self.BASE_PATH.joinpath(self.get_library_path(current_metadata.get_id()))
+                if current_metadata.is_natives():
+                    current_extension = current_metadata.get_current_system_natives_extension()
+                    if not self.is_natives_existant(current_metadata, current_extension):
+                        raise Exception("Natives", current_extension, "for library", current_metadata.get_id(), "does not exist") # TODO: More appropriate exception
                     libraries_dict["natives"].append(str(base_path.joinpath(current_extension)))
                 else:
                     libraries_dict["jars"].append(str(base_path))
@@ -174,23 +174,23 @@ class LibraryManager:
         '''
         used_library_ids = list()
         for binary_parser in binary_parser_list:
-            for library_parser in binary_parser.get_library_parsers():
-                if self.is_library_existant(library_parser) and not (library_parser.get_id() in used_library_ids):
-                    used_library_ids.append(library_parser.get_id())
+            for library_metadata in binary_parser.get_library_metadatas():
+                if self.is_library_existant(library_metadata) and not (library_metadata.get_id() in used_library_ids):
+                    used_library_ids.append(library_metadata.get_id())
         junk_library_ids = list()
         for installed_id in self.index:
             if not installed_id in used_library_ids:
                 junk_library_ids.append(installed_id)
         return junk_library_ids
 
-class LibraryParser:
-    def __init__(self, launcher_obj, binary_dict):
+class LibraryMetadata:
+    def __init__(self, launcher_obj, metadata_dict):
         self.Launcher = launcher_obj
 
-        self.library_info = binary_dict
+        self.library_info = metadata_dict
         self.ARCH_KEY = "${arch}"
 
-    def _get_rules(self):
+    def get_rules(self):
         '''
         Gets the platform rules (allow/disallow) for the library dictionary 'current_library_dict'
         '''
@@ -211,8 +211,11 @@ class LibraryParser:
                         tmp_rules[current] = is_allow
         return tmp_rules
 
+    def set_rules(self, os_rules):
+        pass
+
     def current_system_supported(self):
-        rules_dict = self._get_rules()
+        rules_dict = self.get_rules()
         current_family = self.Launcher.PlatformTools.get_os_family()
         return rules_dict[current_family]
 
@@ -256,7 +259,7 @@ class LibraryParser:
             raise Exception("Current library is not natives") # TODO: More appropriate exception
         natives_extension_list = list()
         for current_platform in self.library_info["natives"].keys():
-            if self._get_rules()[current_platform]:
+            if self.get_rules()[current_platform]:
                 current_extension = self.library_info["natives"][current_platform]
                 if self.ARCH_KEY in current_extension:
                     natives_extension_list.append(current_extension.replace(self.ARCH_KEY, "32"))

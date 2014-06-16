@@ -115,22 +115,31 @@ class AccountTab(QtGui.QWidget):
 
     def _signin(self):
         self.Launcher.AccountManager.get_account().set_account_username(self.online_username.text())
+        orig_button_text = self.signin_button.text()
+        self.signin_button.setText("Signing in...")
+        self.signin_button.setEnabled(False)
+        QtGui.QApplication.processEvents()
         success, error_title, error_message = self.Launcher.AccountManager.get_account().authenticate(self.online_password.text())
         self.online_password.setText(str())
+        self.signin_button.setText(orig_button_text)
         if success:
             self.online_username.setEnabled(False)
             self.online_password.setEnabled(False)
-            self.signin_button.setEnabled(False)
             self.signout_button.setEnabled(True)
         else:
+            self.signin_button.setEnabled(True)
             QtGui.QMessageBox.critical(self, "Sign-in Error: " + error_title, error_message, QtGui.QMessageBox.Ok)
 
     def _signout(self):
+        self.signout_button.setEnabled(False)
+        orig_button_text = self.signout_button.text()
+        self.signout_button.setText("Signing out...")
+        QtGui.QApplication.processEvents()
         success, error_title, error_message = self.Launcher.AccountManager.get_account().invalidate()
         self.online_username.setEnabled(True)
         self.online_password.setEnabled(True)
         self.signin_button.setEnabled(True)
-        self.signout_button.setEnabled(False)
+        self.signout_button.setText(orig_button_text)
         if not success:
             QtGui.QMessageBox.critical(self, "Sign-out Error: " + error_title, error_message, QtGui.QMessageBox.Ok)
 
@@ -429,28 +438,22 @@ class ProgressDialogEvents(QtCore.QObject):
 
     def set_label(self, text):
         self.set_label_sig.emit(text)
-        QtGui.QApplication.processEvents()
 
     def status_update(self, label, value):
         self.set_label_sig.emit(label)
         self.set_value_sig.emit(round(value*100.0))
-        QtGui.QApplication.processEvents()
 
     def show_dialog(self):
         self.show_dialog_sig.emit()
-        QtGui.QApplication.processEvents()
 
     def set_range(self, minval, maxval):
         self.set_range_sig.emit(minval, maxval)
-        QtGui.QApplication.processEvents()
 
     def close_dialog(self):
         self.close_dialog_sig.emit()
-        QtGui.QApplication.processEvents()
 
     def set_window_title(self, text):
         self.window_title.emit(text)
-        QtGui.QApplication.processEvents()
 
 class VersionsManagerTab(QtGui.QWidget):
     def __init__(self, launcher_obj, parent=None):
@@ -462,8 +465,8 @@ class VersionsManagerTab(QtGui.QWidget):
         self.local_storage_installer = None
 
         official_versions_groupbox = QtGui.QGroupBox("Download Official Versions")
-        index_refresh_button = QtGui.QPushButton("Download List")
-        index_refresh_button.clicked.connect(self._download_list)
+        self.index_refresh_button = QtGui.QPushButton("Download List")
+        self.index_refresh_button.clicked.connect(self._download_list)
         self.install_selected_button = QtGui.QPushButton("Install Selected")
         self.install_selected_button.clicked.connect(self._install_selected)
         self.install_selected_button.setEnabled(False)
@@ -474,7 +477,7 @@ class VersionsManagerTab(QtGui.QWidget):
         self.official_versions_treeview.setSelectionModel(QtGui.QItemSelectionModel(official_versions_model))
         self.official_versions_treeview.selectionModel().currentChanged.connect(self._official_versions_item_change)
         official_versions_buttonlayout = QtGui.QVBoxLayout()
-        official_versions_buttonlayout.addWidget(index_refresh_button)
+        official_versions_buttonlayout.addWidget(self.index_refresh_button)
         official_versions_buttonlayout.addStretch()
         official_versions_buttonlayout.addWidget(QtGui.QLabel("Latest Release:"))
         self.latest_release_label = QtGui.QLabel("Unknown")
@@ -537,12 +540,12 @@ class VersionsManagerTab(QtGui.QWidget):
 
         self.progress_dialog_events = ProgressDialogEvents()
         self.progress_dialog = QtGui.QProgressDialog()
-        self.progress_dialog_events.set_label_sig.connect(self.progress_dialog.setLabelText, type=QtCore.Qt.QueuedConnection)
-        self.progress_dialog_events.set_range_sig.connect(self.progress_dialog.setRange, type=QtCore.Qt.QueuedConnection)
-        self.progress_dialog_events.set_value_sig.connect(self.progress_dialog.setValue, type=QtCore.Qt.QueuedConnection)
-        self.progress_dialog_events.show_dialog_sig.connect(self.progress_dialog.show, type=QtCore.Qt.QueuedConnection)
-        self.progress_dialog_events.close_dialog_sig.connect(self.progress_dialog.close, type=QtCore.Qt.QueuedConnection)
-        self.progress_dialog_events.window_title.connect(self.progress_dialog.setWindowTitle, type=QtCore.Qt.QueuedConnection)
+        self.progress_dialog_events.set_label_sig.connect(self.progress_dialog.setLabelText)
+        self.progress_dialog_events.set_range_sig.connect(self.progress_dialog.setRange)
+        self.progress_dialog_events.set_value_sig.connect(self.progress_dialog.setValue)
+        self.progress_dialog_events.show_dialog_sig.connect(self.progress_dialog.show)
+        self.progress_dialog_events.close_dialog_sig.connect(self.progress_dialog.close)
+        self.progress_dialog_events.window_title.connect(self.progress_dialog.setWindowTitle)
         self.progress_dialog_events.set_range(0, 100)
         self.progress_dialog.setAutoClose(False)
         
@@ -573,9 +576,15 @@ class VersionsManagerTab(QtGui.QWidget):
         self.latest_snapshot_label.setText(self.Launcher.VersionsListManager.get_latest_snapshot())
 
     def _download_list(self):
+        orig_button_text = self.index_refresh_button.text()
+        self.index_refresh_button.setEnabled(False)
+        self.index_refresh_button.setText("Downloading...")
+        QtGui.QApplication.processEvents()
         first_time = self.Launcher.VersionsListManager.get_versions() == None
         self.Launcher.VersionsListManager.download_versions()
         self._load_official_versions()
+        self.index_refresh_button.setEnabled(True)
+        self.index_refresh_button.setText(orig_button_text)
         if not first_time:
             QtGui.QMessageBox.information(self, "YAMCL: Download Available Versions Index", "The latest versions index has been downloaded.")
 
@@ -589,8 +598,10 @@ class VersionsManagerTab(QtGui.QWidget):
             self.progress_dialog_events.set_window_title("Downloading " + vanilla_id)
             self.progress_dialog_events.status_update("Downloading binary", 0.5)
             self.progress_dialog_events.show_dialog()
+            QtGui.QApplication.processEvents()
             self.Launcher.BinaryManager.download_official(vanilla_id)
             self.progress_dialog_events.status_update("Downloading binary", 1.0)
+            QtGui.QApplication.processEvents()
             binary_parser = self.Launcher.BinaryManager.get_binary_parser(vanilla_id, "vanilla")
             if not binary_parser.is_compatible():
                 clicked_button = QtGui.QMessageBox.information(self, "YAMCL: Incompatible Version", "This game version is designed for a launcher that is newer than this current version. Continuing may cause the installation to fail. Do you want to continue?\n\nGame version: " + str(binary_parser.get_minimum_version()) + "\nSupported launcher version: " + str(self.Launcher.COMPATIBLE_VERSION), QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
@@ -598,7 +609,7 @@ class VersionsManagerTab(QtGui.QWidget):
                     self.Launcher.BinaryManager.delete(vanilla_id, "vanilla")
                     self.progress_dialog_events.close_dialog()
                     return
-            self.Launcher.LibraryManager.download_missing(binary_parser.get_library_parsers(), self.progress_dialog_events.status_update)
+            self.Launcher.LibraryManager.download_missing(binary_parser.get_library_metadatas(), self.progress_dialog_events.status_update)
             self.Launcher.AssetsManager.download_index(binary_parser.get_assets_id())
             self.Launcher.AssetsManager.download_missing(binary_parser.get_assets_id(), self.progress_dialog_events.status_update)
             self.progress_dialog_events.close_dialog()

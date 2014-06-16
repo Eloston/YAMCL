@@ -207,7 +207,7 @@ class ProfileInstance:
             raise Exception("Could not find a Java binary to launch") # TODO: more appropriate exception
         launch_arguments.append(self.Launcher.PlatformTools.get_java_path())
         launch_arguments += self.get_java_arguments().split(" ")
-        libraries_dict = self.Launcher.LibraryManager.get_platform_paths(game_binary_parser.get_library_parsers())
+        libraries_dict = self.Launcher.LibraryManager.get_platform_paths(game_binary_parser.get_library_metadatas())
         launch_arguments.append("-Djava.library.path=" + self.Launcher.PlatformTools.JAVA_PATH_DELIM.join(libraries_dict["natives"]))
         launch_arguments.append("-cp")
         launch_arguments.append(self.Launcher.PlatformTools.JAVA_PATH_DELIM.join(libraries_dict["jars"] + [version_paths["jar"]]))
