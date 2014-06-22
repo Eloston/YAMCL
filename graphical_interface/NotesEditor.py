@@ -16,10 +16,12 @@ along with YAMCL.  If not, see {http://www.gnu.org/licenses/}.
 from PySide import QtCore, QtGui
 
 class NotesEditor(QtGui.QDialog):
-    def __init__(self, title_text, notes_content, set_notes_func, parent=None):
+    def __init__(self, title_text, notes_content, set_notes_func, cancel_editing=None, meta=None, parent=None):
         super(NotesEditor, self).__init__(parent)
 
         self.set_notes = set_notes_func
+        self.metadata = meta
+        self.cancel_func = cancel_editing
 
         verticalLayout = QtGui.QVBoxLayout(self)
         self.EditorBox = QtGui.QTextEdit()
@@ -44,8 +46,13 @@ class NotesEditor(QtGui.QDialog):
             self.reject()
 
     def _save_changes(self):
-        self.set_notes(self.EditorBox.toPlainText())
+        if self.metadata == None:
+            self.set_notes(self.EditorBox.toPlainText())
+        else:
+            self.set_notes(self.EditorBox.toPlainText(), metadata)
         self.reject()
 
     def _close_editor(self):
+        if not self.cancel_func == None:
+            self.cancel_func()
         self.close()

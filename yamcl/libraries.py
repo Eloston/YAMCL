@@ -168,13 +168,13 @@ class LibraryManager:
         del self.index[current_library_id]
         self._flush_index()
 
-    def get_unused_libraries(self, binary_parser_list):
+    def get_unused_libraries(self, binary_metadata_list):
         '''
-        Returns a list of libraries not used in binary parsers 'binary_parser_list'
+        Returns a list of libraries not used in binary metadatas 'binary_metadata_list'
         '''
         used_library_ids = list()
-        for binary_parser in binary_parser_list:
-            for library_metadata in binary_parser.get_library_metadatas():
+        for binary_metadata in binary_metadata_list:
+            for library_metadata in binary_metadata.get_library_metadatas():
                 if self.is_library_existant(library_metadata) and not (library_metadata.get_id() in used_library_ids):
                     used_library_ids.append(library_metadata.get_id())
         junk_library_ids = list()
@@ -189,6 +189,9 @@ class LibraryMetadata:
 
         self.library_info = metadata_dict
         self.ARCH_KEY = "${arch}"
+
+    def get_metadata_dict(self):
+        return self.library_info
 
     def get_rules(self):
         '''
@@ -212,7 +215,18 @@ class LibraryMetadata:
         return tmp_rules
 
     def set_rules(self, os_rules):
-        pass
+        self.library_info["rules"] = list()
+        for current_platform in os_rules:
+            new_platform_dict = dict()
+            if os_rules[current_platform] is True:
+                new_platform_dict["action"] = "allow"
+            elif os_rules[current_platform] is False:
+                new_platform_dict["action"] = "disallow"
+            else:
+                raise Exception("Invalid OS rule for " + str(current_platform))
+            new_platform_dict["os"] = dict()
+            new_platform_dict["os"]["name"] = current_platform
+            self.library_info["rules"].append(new_platform_dict)
 
     def current_system_supported(self):
         rules_dict = self.get_rules()
@@ -243,6 +257,12 @@ class LibraryMetadata:
             new_path.append("-".join(parts) + ".jar")
         return new_path
 
+    def set_natives_extensions(self, natives_extensions_dict):
+        self.library_info["natives"] = natives_extensions_dict
+
+    def get_raw_natives_extensions(self):
+        return self.library_info["natives"]
+
     def get_current_system_natives_extension(self):
         if not self.is_natives():
             raise Exception("Current library is not natives") # TODO: More appropriate exception
@@ -258,9 +278,9 @@ class LibraryMetadata:
         if not self.is_natives():
             raise Exception("Current library is not natives") # TODO: More appropriate exception
         natives_extension_list = list()
-        for current_platform in self.library_info["natives"].keys():
+        for current_platform in self.get_raw_natives_extensions().keys():
             if self.get_rules()[current_platform]:
-                current_extension = self.library_info["natives"][current_platform]
+                current_extension = self.get_raw_natives_extensions()[current_platform]
                 if self.ARCH_KEY in current_extension:
                     natives_extension_list.append(current_extension.replace(self.ARCH_KEY, "32"))
                     natives_extension_list.append(current_extension.replace(self.ARCH_KEY, "64"))

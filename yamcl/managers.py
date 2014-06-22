@@ -122,15 +122,15 @@ class AssetsManager:
             FileTools.delete_and_clean(str(asset_paths["index"]))
             self._remove_unused_objects(self._get_indexes())
 
-    def get_unused(self, binary_parser_list):
+    def get_unused(self, binary_metadata_list):
         '''
-        Returns a list of unused asset ids in binary_parser_list
+        Returns a list of unused asset ids in binary_metadata_list
         '''
         unused_assets_list = list()
         for existing_id in self._get_indexes():
             asset_used = False
-            for binary_parser in binary_parser_list:
-                if binary_parser.get_assets_id() == existing_id:
+            for binary_metadata in binary_metadata_list:
+                if binary_metadata.get_assets_id() == existing_id:
                     asset_used = True
                     break
             if not asset_used:

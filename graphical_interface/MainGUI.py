@@ -18,7 +18,7 @@ import subprocess
 
 from PySide import QtCore, QtGui
 
-from graphical_interface import NotesEditor, ConsoleOutput, LocalVersionInstaller, LocalLibraryInstaller
+from graphical_interface import NotesEditor, ConsoleOutput, LocalVersionInstaller, LocalLibraryInstaller, VersionMetadataEditor
 
 class AccountTab(QtGui.QWidget):
     def __init__(self, launcher_obj, parent=None):
@@ -279,17 +279,16 @@ class ProfileInstanceTab(QtGui.QWidget):
         self.Launcher = launcher_obj
         self.ProfileInstance = instance_obj
 
-        self.notes_editor = None
         self.console_output = None
 
         notes_groupbox = QtGui.QGroupBox("Notes")
         self.notes_preview = QtGui.QTextBrowser()
         self.notes_preview.setPlainText(self.ProfileInstance.get_notes())
-        edit_notes_button = QtGui.QPushButton("Edit Notes")
-        edit_notes_button.clicked.connect(self._open_notes_editor)
+        self.edit_notes_button = QtGui.QPushButton("Edit Notes")
+        self.edit_notes_button.clicked.connect(self._open_notes_editor)
         notes_groupbox_layout = QtGui.QHBoxLayout()
         notes_groupbox_layout.addWidget(self.notes_preview)
-        notes_groupbox_layout.addWidget(edit_notes_button)
+        notes_groupbox_layout.addWidget(self.edit_notes_button)
         notes_groupbox.setLayout(notes_groupbox_layout)
 
         specify_version_groupbox = QtGui.QGroupBox("Version to Launch")
@@ -398,11 +397,12 @@ class ProfileInstanceTab(QtGui.QWidget):
             self._save_java_arguments()
         self.ProfileInstance.set_last_version(self._selected_id(), self._selected_type())
         self.ProfileInstance.launch_version(self._selected_id(), self._selected_type())
-        self.console_output = ConsoleOutput.GameOutput(self.ProfileInstance.get_name(), self.ProfileInstance.get_output_object())
+        self.console_output = ConsoleOutput.GameOutput(self.ProfileInstance.get_name(), self.ProfileInstance.get_output_object(), self)
 
     def _open_notes_editor(self):
-        self.notes_editor = NotesEditor.NotesEditor(self.ProfileInstance.get_name(), self.ProfileInstance.get_notes(), self.set_new_notes)
-        self.notes_editor.show()
+        notes_editor = NotesEditor.NotesEditor(self.ProfileInstance.get_name(), self.ProfileInstance.get_notes(), self.set_new_notes, self.cancel_new_notes, parent=self)
+        notes_editor.show()
+        self.edit_notes_button.setEnabled(False)
 
     def _open_game_output(self):
         if isinstance(self.console_output, ConsoleOutput.GameOutput):
@@ -420,6 +420,10 @@ class ProfileInstanceTab(QtGui.QWidget):
     def set_new_notes(self, notes_content):
         self.notes_preview.setPlainText(notes_content)
         self.ProfileInstance.set_notes(notes_content)
+        self.edit_notes_button.setEnabled(True)
+
+    def cancel_new_notes(self):
+        self.edit_notes_button.setEnabled(True)
 
     def close(self):
         self.Launcher.ProfileManager.delete_profile_instance(self.ProfileInstance.get_name())
@@ -460,10 +464,6 @@ class VersionsManagerTab(QtGui.QWidget):
         super(VersionsManagerTab, self).__init__(parent)
         self.Launcher = launcher_obj
 
-        self.notes_editor = None
-        self.notes_editor_version = None
-        self.local_storage_installer = None
-
         official_versions_groupbox = QtGui.QGroupBox("Download Official Versions")
         self.index_refresh_button = QtGui.QPushButton("Download List")
         self.index_refresh_button.clicked.connect(self._download_list)
@@ -501,6 +501,9 @@ class VersionsManagerTab(QtGui.QWidget):
         self.edit_notes_button = QtGui.QPushButton("Edit Notes")
         self.edit_notes_button.clicked.connect(self._edit_version_notes)
         self.edit_notes_button.setEnabled(False)
+        self.edit_metadata_button = QtGui.QPushButton("Edit Metadata")
+        self.edit_metadata_button.clicked.connect(self._edit_metadata)
+        self.edit_metadata_button.setEnabled(False)
         self.open_directory_button = QtGui.QPushButton("Open Directory")
         self.open_directory_button.clicked.connect(self._open_version_directory)
         self.open_directory_button.setEnabled(False)
@@ -513,6 +516,7 @@ class VersionsManagerTab(QtGui.QWidget):
         manage_versions_buttonlayout = QtGui.QVBoxLayout()
         manage_versions_buttonlayout.addWidget(QtGui.QLabel("Selected Version:"))
         manage_versions_buttonlayout.addWidget(self.edit_notes_button)
+        manage_versions_buttonlayout.addWidget(self.edit_metadata_button)
         manage_versions_buttonlayout.addWidget(self.open_directory_button)
         manage_versions_buttonlayout.addWidget(self.rename_button)
         manage_versions_buttonlayout.addWidget(self.delete_button)
@@ -524,12 +528,15 @@ class VersionsManagerTab(QtGui.QWidget):
 
         local_storage_button = QtGui.QPushButton("Local Storage")
         local_storage_button.clicked.connect(self._install_local_storage)
-        existing_official_button = QtGui.QPushButton("Existing Official Version")
+        existing_official_button = QtGui.QPushButton("Existing Official")
         existing_official_button.clicked.connect(self._install_custom_from_official)
+        existing_custom_button = QtGui.QPushButton("Existing Custom")
+        existing_custom_button.clicked.connect(self._install_custom_from_custom)
         install_buttonlayout = QtGui.QHBoxLayout()
         install_buttonlayout.addWidget(QtGui.QLabel("Install custom version from:"))
-        install_buttonlayout.addWidget(local_storage_button)
         install_buttonlayout.addWidget(existing_official_button)
+        install_buttonlayout.addWidget(existing_custom_button)
+        install_buttonlayout.addWidget(local_storage_button)
         install_buttonlayout.addStretch()
 
         main_layout = QtGui.QVBoxLayout()
@@ -589,7 +596,11 @@ class VersionsManagerTab(QtGui.QWidget):
             QtGui.QMessageBox.information(self, "YAMCL: Download Available Versions Index", "The latest versions index has been downloaded.")
 
     def _official_versions_item_change(self, index, previous):
-        self.install_selected_button.setEnabled(not self.official_versions_treeview.model().itemFromIndex(index).hasChildren())
+        current_item = self.official_versions_treeview.model().itemFromIndex(index)
+        if current_item is None:
+            self.install_selected_button.setEnabled(False)
+        else:
+            self.install_selected_button.setEnabled(not current_item.hasChildren())
 
     def _install_selected(self):
         vanilla_id = self.official_versions_treeview.model().itemFromIndex(self.official_versions_treeview.currentIndex()).text()
@@ -602,22 +613,24 @@ class VersionsManagerTab(QtGui.QWidget):
             self.Launcher.BinaryManager.download_official(vanilla_id)
             self.progress_dialog_events.status_update("Downloading binary", 1.0)
             QtGui.QApplication.processEvents()
-            binary_parser = self.Launcher.BinaryManager.get_binary_parser(vanilla_id, "vanilla")
-            if not binary_parser.is_compatible():
-                clicked_button = QtGui.QMessageBox.information(self, "YAMCL: Incompatible Version", "This game version is designed for a launcher that is newer than this current version. Continuing may cause the installation to fail. Do you want to continue?\n\nGame version: " + str(binary_parser.get_minimum_version()) + "\nSupported launcher version: " + str(self.Launcher.COMPATIBLE_VERSION), QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+            binary_metadata = self.Launcher.BinaryManager.get_binary_metadata(vanilla_id, "vanilla")
+            if not binary_metadata.is_compatible():
+                clicked_button = QtGui.QMessageBox.information(self, "YAMCL: Incompatible Version", "This game version is designed for a launcher that is newer than this current version. Continuing may cause the installation to fail. Do you want to continue?\n\nGame version: " + str(binary_metadata.get_minimum_version()) + "\nSupported launcher version: " + str(self.Launcher.COMPATIBLE_VERSION), QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
                 if clicked_button == QtGui.QMessageBox.No:
                     self.Launcher.BinaryManager.delete(vanilla_id, "vanilla")
                     self.progress_dialog_events.close_dialog()
                     return
-            self.Launcher.LibraryManager.download_missing(binary_parser.get_library_metadatas(), self.progress_dialog_events.status_update)
-            self.Launcher.AssetsManager.download_index(binary_parser.get_assets_id())
-            self.Launcher.AssetsManager.download_missing(binary_parser.get_assets_id(), self.progress_dialog_events.status_update)
+            self.Launcher.LibraryManager.download_missing(binary_metadata.get_library_metadatas(), self.progress_dialog_events.status_update)
+            self.Launcher.AssetsManager.download_index(binary_metadata.get_assets_id())
+            self.Launcher.AssetsManager.download_missing(binary_metadata.get_assets_id(), self.progress_dialog_events.status_update)
             self.progress_dialog_events.close_dialog()
             self._load_official_versions()
             self._populate_manage_versions_treeview()
             QtGui.QMessageBox.information(self, "YAMCL: Installed " + vanilla_id, "Official version " + vanilla_id + " installed successfully")
+
     def _populate_manage_versions_treeview(self):
         self.edit_notes_button.setEnabled(False)
+        self.edit_metadata_button.setEnabled(False)
         self.rename_button.setEnabled(False)
         self.open_directory_button.setEnabled(False)
         self.delete_button.setEnabled(False)
@@ -642,17 +655,24 @@ class VersionsManagerTab(QtGui.QWidget):
                 new_state = True
                 is_custom = self.manage_versions_treeview.model().itemFromIndex(index).parent().text() == "custom"
         self.edit_notes_button.setEnabled(is_custom and new_state)
+        self.edit_metadata_button.setEnabled(is_custom and new_state)
         self.rename_button.setEnabled(is_custom and new_state)
         self.open_directory_button.setEnabled(new_state)
         self.delete_button.setEnabled(new_state)
 
     def _edit_version_notes(self):
-        self.notes_editor_version = self.manage_versions_treeview.model().itemFromIndex(self.manage_versions_treeview.currentIndex()).text()
-        self.notes_editor = NotesEditor.NotesEditor(self.notes_editor_version, self.Launcher.BinaryManager.get_notes(self.notes_editor_version), self.set_new_notes)
-        self.notes_editor.show()
+        notes_editor_version = self.manage_versions_treeview.model().itemFromIndex(self.manage_versions_treeview.currentIndex()).text()
+        notes_editor = NotesEditor.NotesEditor(notes_editor_version, self.Launcher.BinaryManager.get_notes(notes_editor_version), self.set_new_notes, meta=notes_editor_version, parent=self)
+        notes_editor.show()
 
-    def set_new_notes(self, notes_content):
-        self.Launcher.BinaryManager.set_notes(self.notes_editor_version, notes_content)
+    def set_new_notes(self, notes_content, edited_version):
+        self.Launcher.BinaryManager.set_notes(edited_version, notes_content)
+
+    def _edit_metadata(self):
+        id_item = self.manage_versions_treeview.model().itemFromIndex(self.manage_versions_treeview.currentIndex()).text()
+        type_item = self.manage_versions_treeview.model().itemFromIndex(self.manage_versions_treeview.currentIndex()).parent().text()
+        metadata_editor = VersionMetadataEditor.VersionMetadataEditor(self.Launcher.LibraryManager, self.Launcher.BinaryManager.get_binary_metadata(id_item, type_item), id_item, self)
+        metadata_editor.show()
 
     def _open_version_directory(self):
         version_item = self.manage_versions_treeview.model().itemFromIndex(self.manage_versions_treeview.currentIndex()).text()
@@ -685,10 +705,10 @@ class VersionsManagerTab(QtGui.QWidget):
         if clicked_button == QtGui.QMessageBox.Yes:
             self.Launcher.BinaryManager.delete(version_text, type_text)
             self._populate_manage_versions_treeview()
-            binary_parser_list = self.Launcher.BinaryManager.get_binary_parser_list(exclude={type_text: [version_text]})
-            for library_id in self.Launcher.LibraryManager.get_unused_libraries(binary_parser_list):
+            binary_metadata_list = self.Launcher.BinaryManager.get_binary_metadata_list(exclude={type_text: [version_text]})
+            for library_id in self.Launcher.LibraryManager.get_unused_libraries(binary_metadata_list):
                 self.Launcher.LibraryManager.delete(library_id)
-            for asset_id in self.Launcher.AssetsManager.get_unused(binary_parser_list):
+            for asset_id in self.Launcher.AssetsManager.get_unused(binary_metadata_list):
                 self.Launcher.AssetsManager.delete(asset_id)
             if type_text == "vanilla" and not self.Launcher.VersionsListManager.get_versions() == None:
                 self._populate_official_versions_treeview()
@@ -714,16 +734,35 @@ class VersionsManagerTab(QtGui.QWidget):
                             self._populate_manage_versions_treeview()
                             break
 
+    def _install_custom_from_custom(self):
+        all_custom_versions = self.Launcher.BinaryManager.get_installed_versions()["custom"]
+        if len(all_custom_versions) > 0:
+            selected_custom_id, selection_success = QtGui.QInputDialog.getItem(self, "YAMCL: Select a Custom Version", "Specify a custom version to create a new custom version:", all_custom_versions, 0, False) # Tuple unpacking
+            if selection_success:
+                input_success = True
+                last_name = str()
+                while input_success:
+                    custom_version_name, input_success = QtGui.QInputDialog.getText(self, "YAMCL: Custom Version Name", "Specify a custom version based off of: " + selected_custom_id, QtGui.QLineEdit.Normal, last_name)
+                    if input_success:
+                        if not len(custom_version_name) > 0:
+                            QtGui.QMessageBox.critical(self, "YAMCL: Custom Version Name Blank", "The new custom version name cannot be blank. Please specify a name.", QtGui.QMessageBox.Ok)
+                            continue
+                        if custom_version_name in self.Launcher.BinaryManager.get_installed_versions()["custom"]:
+                            QtGui.QMessageBox.critical(self, "YAMCL: Custom Version Name Conflict", "Custom version name '" + custom_version_name + "' already exists.", QtGui.QMessageBox.Ok)
+                            last_name = custom_version_name
+                        else:
+                            self.Launcher.BinaryManager.custom_from_custom(selected_custom_id, custom_version_name)
+                            self._populate_manage_versions_treeview()
+                            break
+
     def _install_local_storage(self):
-        self.local_storage_installer = LocalVersionInstaller.LocalVersionInstaller(self.Launcher.BinaryManager, self._populate_manage_versions_treeview)
-        self.local_storage_installer.show()
+        local_storage_installer = LocalVersionInstaller.LocalVersionInstaller(self.Launcher.BinaryManager, self._populate_manage_versions_treeview, self)
+        local_storage_installer.show()
 
 class LibrariesManagerTab(QtGui.QWidget):
     def __init__(self, launcher_obj, parent=None):
         super(LibrariesManagerTab, self).__init__(parent)
         self.Launcher = launcher_obj
-
-        self.library_installer = None
 
         library_list_model = QtGui.QStandardItemModel()
         self.library_list = QtGui.QListView()
@@ -765,7 +804,9 @@ class LibrariesManagerTab(QtGui.QWidget):
     def _populate_library_list(self):
         self.library_list.model().clear()
         for library_id in self.Launcher.LibraryManager.get_all_library_ids():
-            self.library_list.model().invisibleRootItem().appendRow(QtGui.QStandardItem(library_id))
+            current_item = QtGui.QStandardItem(library_id)
+            current_item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+            self.library_list.model().invisibleRootItem().appendRow(current_item)
         self.library_list.model().sort(0)
 
     def _selected_library_change(self, index, previous):
@@ -811,8 +852,8 @@ class LibrariesManagerTab(QtGui.QWidget):
             QtGui.QMessageBox.critical(self, "YAMCL: Open Library Directory Error", "Unable to open the directory for: '" + current_library_id + "'\nThe path is broken.", QtGui.QMessageBox.Ok)
 
     def _open_library_installer(self):
-        self.library_installer = LocalLibraryInstaller.LocalLibraryInstaller(self.Launcher.LibraryManager, self._populate_library_list)
-        self.library_installer.show()
+        library_installer = LocalLibraryInstaller.LocalLibraryInstaller(self.Launcher.LibraryManager, self._populate_library_list, self)
+        library_installer.show()
 
 class InformationTab(QtGui.QWidget):
     def __init__(self, launcher_obj, parent=None):
@@ -862,11 +903,11 @@ class MainGUI(QtGui.QMainWindow):
         self.Launcher = launcher_obj
 
         MainTabs = QtGui.QTabWidget()
-        MainTabs.addTab(AccountTab(self.Launcher), "Account")
-        MainTabs.addTab(ProfilesTab(self.Launcher), "Profiles")
-        MainTabs.addTab(VersionsManagerTab(self.Launcher), "Versions Manager")
-        MainTabs.addTab(LibrariesManagerTab(self.Launcher), "Libraries Manager")
-        MainTabs.addTab(InformationTab(self.Launcher), "Information")
+        MainTabs.addTab(AccountTab(self.Launcher, self), "Account")
+        MainTabs.addTab(ProfilesTab(self.Launcher, self), "Profiles")
+        MainTabs.addTab(VersionsManagerTab(self.Launcher, self), "Versions Manager")
+        MainTabs.addTab(LibrariesManagerTab(self.Launcher, self), "Libraries Manager")
+        MainTabs.addTab(InformationTab(self.Launcher, self), "Information")
 
         self.add_menus()
         self.setCentralWidget(MainTabs)

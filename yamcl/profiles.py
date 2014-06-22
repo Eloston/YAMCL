@@ -183,14 +183,14 @@ class ProfileInstance:
         '''
         Launches the game 'version_id' of type 'version_type'
         '''
-        game_binary_parser = self.Launcher.BinaryManager.get_binary_parser(version_id, version_type)
+        game_binary_metadata = self.Launcher.BinaryManager.get_binary_metadata(version_id, version_type)
         game_arguments = dict()
         game_arguments["profile_name"] = self.profile_name
-        game_arguments["version_name"] = game_binary_parser.get_id()
+        game_arguments["version_name"] = game_binary_metadata.get_id()
         game_arguments["game_directory"] = str(self.data_path)
-        game_arguments["game_assets"] = str(self.Launcher.AssetsManager.get_paths(game_binary_parser.get_assets_id())["directory"])
+        game_arguments["game_assets"] = str(self.Launcher.AssetsManager.get_paths(game_binary_metadata.get_assets_id())["directory"])
         game_arguments["assets_root"] = str(self.Launcher.AssetsManager.BASE_PATH)
-        game_arguments["assets_index_name"] = game_binary_parser.get_assets_id()
+        game_arguments["assets_index_name"] = game_binary_metadata.get_assets_id()
 
         game_arguments["auth_username"] = self.Launcher.AccountManager.get_account().get_account_username()
         game_arguments["auth_player_name"] = self.Launcher.AccountManager.get_account().get_game_username()
@@ -207,12 +207,12 @@ class ProfileInstance:
             raise Exception("Could not find a Java binary to launch") # TODO: more appropriate exception
         launch_arguments.append(self.Launcher.PlatformTools.get_java_path())
         launch_arguments += self.get_java_arguments().split(" ")
-        libraries_dict = self.Launcher.LibraryManager.get_platform_paths(game_binary_parser.get_library_metadatas())
+        libraries_dict = self.Launcher.LibraryManager.get_platform_paths(game_binary_metadata.get_library_metadatas())
         launch_arguments.append("-Djava.library.path=" + self.Launcher.PlatformTools.JAVA_PATH_DELIM.join(libraries_dict["natives"]))
         launch_arguments.append("-cp")
         launch_arguments.append(self.Launcher.PlatformTools.JAVA_PATH_DELIM.join(libraries_dict["jars"] + [version_paths["jar"]]))
-        launch_arguments.append(game_binary_parser.get_launch_class())
-        launch_arguments += game_binary_parser.get_arguments(game_arguments)
+        launch_arguments.append(game_binary_metadata.get_launch_class())
+        launch_arguments += game_binary_metadata.generate_arguments(game_arguments)
         os.chdir(game_arguments["game_directory"]) # Needed for logs to be created in the proper directory
         self.game_process = subprocess.Popen(args=launch_arguments, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
 
