@@ -60,7 +60,7 @@ if __name__ == '__main__':
     arg_returns = arg_parser.parse_args()
 
     app = QtGui.QApplication(sys.argv)
-    splash_image_path = str(pathlib.Path(__file__).resolve().parent.joinpath(pathlib.Path("splashscreen.png")))
+    splash_image_path = str(pathlib.Path(sys.argv[0]).parent.joinpath(pathlib.Path("splashscreen.png")))
     splash_screen = QtGui.QSplashScreen(QtGui.QPixmap(splash_image_path))
     splash_screen.show()
     app.processEvents()
